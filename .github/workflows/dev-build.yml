@@ -1,17 +1,11 @@
-name: Dev branch build
+name: Breezy Weather dev build
 
 on:
   workflow_dispatch:
 
-concurrency:
-  group: dev-build
-  cancel-in-progress: true
-
 jobs:
   build:
     runs-on: 'ubuntu-24.04'
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout dev branch
@@ -34,34 +28,7 @@ jobs:
       - name: Clean build
         run: ./gradlew clean
 
-      - name: Assemble freenet flavor
-        if: github.repository == 'breezy-weather/breezy-weather'
-        run: ./gradlew assembleFreenetRelease -Pbreezy # /!\ You’re NOT allowed to redistribute modified APKs with the breezy config enabled, see license terms
-
-      - name: Sign APK (free networks)
-        if: github.repository == 'breezy-weather/breezy-weather'
-        uses: r0adkll/sign-android-release@a391126403df92c6a0a3988a829dd47f79b89ed7
-        with:
-          releaseDirectory: app/build/outputs/apk/freenet/release
-          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-        env:
-          BUILD_TOOLS_VERSION: '36.0.0'
-
-      - name: Prepare freenet APK
-        if: github.repository == 'breezy-weather/breezy-weather'
-        run: |
-          set -e
-          mv app/build/outputs/apk/freenet/release/app-freenet-universal-release-unsigned-signed.apk breezy-weather-dev_freenet.apk
-          tar -czvf mapping-dev_freenet.tar.gz --directory=app/build/outputs/mapping/freenetRelease/ mapping.txt
-
-      - name: Clean build
-        if: github.repository == 'breezy-weather/breezy-weather'
-        run: ./gradlew clean
-
-      - name: Add API keys to local.properties
+      - name: Add secrets to local.properties
         run: |
           set -e
           echo "breezy.accu.key=$ACCU_WEATHER_KEY" >> local.properties
@@ -76,12 +43,10 @@ jobs:
           echo "breezy.cwa.key=$CWA_KEY" >> local.properties
           echo "breezy.eccc.key=$ECCC_KEY" >> local.properties
           echo "breezy.geonames.key=$GEO_NAMES_KEY" >> local.properties
-          echo "breezy.here.key=$HERE_KEY" >> local.properties
           echo "breezy.metie.key=$MET_IE_KEY" >> local.properties
           echo "breezy.mf.jwtKey=$MF_WSFT_JWT_KEY" >> local.properties
           echo "breezy.mf.key=$MF_WSFT_KEY" >> local.properties
           echo "breezy.openweather.key=$OPEN_WEATHER_KEY" >> local.properties
-          echo "breezy.pirateweather.key=$PIRATE_WEATHER_KEY" >> local.properties
         env:
           ACCU_WEATHER_KEY: ${{ secrets.ACCU_WEATHER_KEY }}
           AEMET_KEY: ${{ secrets.AEMET_KEY }}
@@ -95,12 +60,10 @@ jobs:
           CWA_KEY: ${{ secrets.CWA_KEY }}
           ECCC_KEY: ${{ secrets.ECCC_KEY }}
           GEO_NAMES_KEY: ${{ secrets.GEO_NAMES_KEY }}
-          HERE_KEY: ${{ secrets.HERE_KEY }}
           MET_IE_KEY: ${{ secrets.MET_IE_KEY }}
           MF_WSFT_JWT_KEY: ${{ secrets.MF_WSFT_JWT_KEY }}
           MF_WSFT_KEY: ${{ secrets.MF_WSFT_KEY }}
           OPEN_WEATHER_KEY: ${{ secrets.OPEN_WEATHER_KEY }}
-          PIRATE_WEATHER_KEY: ${{ secrets.PIRATE_WEATHER_KEY }}
 
       - name: Assemble basic flavor
         run: ./gradlew assembleBasicRelease -Pbreezy # /!\ You’re NOT allowed to redistribute modified APKs with the breezy config enabled, see license terms
@@ -121,34 +84,20 @@ jobs:
         env:
           BUILD_TOOLS_VERSION: '36.0.0'
 
-      - name: Prepare basic APKs
+      - name: Prepare APKs with checksums, archive mapping.txt file
         run: |
           set -e
           mv app/build/outputs/apk/basic/release/app-basic-universal-release-unsigned-signed.apk breezy-weather-dev_standard.apk
-          mv app/build/outputs/apk/basic/release/app-basic-arm64-v8a-release-unsigned-signed.apk breezy-weather-dev-arm64-v8a_standard.apk
-          mv app/build/outputs/apk/basic/release/app-basic-armeabi-v7a-release-unsigned-signed.apk breezy-weather-dev-armeabi-v7a_standard.apk
-          mv app/build/outputs/apk/basic/release/app-basic-x86-release-unsigned-signed.apk breezy-weather-dev-x86_standard.apk
-          mv app/build/outputs/apk/basic/release/app-basic-x86_64-release-unsigned-signed.apk breezy-weather-dev-x86_64_standard.apk
+          sha256=`sha256sum breezy-weather-dev_standard.apk | awk '{ print $1 }'`
+          echo "APK_UNIVERSAL_SHA256=$sha256" >> $GITHUB_ENV
+          echo "breezy-weather-dev_standard.apk $sha256" > checksums.txt
           tar -czvf mapping-dev_standard.tar.gz --directory=app/build/outputs/mapping/basicRelease/ mapping.txt
 
-      - name: Delete previous draft release
-        run: gh release delete dev-build --yes --cleanup-tag || true
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Create draft release
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          tag_name: dev-build
-          target_commitish: dev
-          name: Breezy Weather dev build
-          body: |
-            **Draft release — only visible to users with write access to this repository.**
-
-            Latest signed dev build from the `dev` branch, with default API keys baked in (personal use only).
-            Download the APK matching your device architecture; if you’re not sure, use `breezy-weather-dev_standard.apk` (universal).
-          files: |
-            breezy-weather-dev*.apk
-            mapping-dev*.tar.gz
-          draft: true
-          prerelease: false
+          name: breezy-weather-dev-standard
+          path: |
+            breezy-weather-dev_standard.apk
+            mapping-dev_standard.tar.gz
+            checksums.txt
