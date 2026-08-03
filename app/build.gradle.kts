@@ -23,9 +23,9 @@ configure<ApplicationExtension> {
     namespace = "org.breezyweather"
 
     defaultConfig {
-        applicationId = "org.breezyweather"
+        applicationId = "my.weather"
         versionCode = 60202
-        versionName = "6.2.2"
+        versionName = "6.2.2.1"
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getGitSha()}\"")
