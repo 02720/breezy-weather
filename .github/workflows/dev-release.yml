@@ -1,0 +1,140 @@
+# 手动触发: 在仓库 Actions 页面选择本工作流, Branch 下拉框选择 dev 分支, 点击 Run workflow。
+# 基于 dev 分支构建 basic 版带签名 APK (universal + 各 ABI), 并发布为 pre-release。
+# Release 的 tag 为 v<version>-dev-<short sha>, 例如 v6.2.2-dev-a1b2c3d。
+# 前提: 仓库需配置 secrets: SIGNING_KEY / ALIAS / KEY_STORE_PASSWORD / KEY_PASSWORD。
+# 注意: 不使用 -Pbreezy 参数 (许可协议不允许 fork 分发带官方品牌配置的 APK, 参见 push.yml 中的说明)。
+name: Build dev APK and publish release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dev-release
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: 'ubuntu-24.04'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Ensure branch is dev
+        if: github.ref_name != 'dev'
+        run: |
+          echo "::error::This workflow must be run on the dev branch (current: ${{ github.ref_name }})"
+          exit 1
+
+      - name: Set up JDK
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          java-version-file: .github/.java-version
+          distribution: temurin
+
+      - name: Set up gradle
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
+
+      - name: Clean build
+        run: ./gradlew clean
+
+      - name: Add API keys to local.properties
+        # 仅当对应 secrets 已配置时才会写入, 未配置则跳过
+        env:
+          ACCU_WEATHER_KEY: ${{ secrets.ACCU_WEATHER_KEY }}
+          AEMET_KEY: ${{ secrets.AEMET_KEY }}
+          ATMO_AURA_KEY: ${{ secrets.ATMO_AURA_KEY }}
+          ATMO_FRANCE_KEY: ${{ secrets.ATMO_FRANCE_KEY }}
+          ATMO_GRAND_EST_KEY: ${{ secrets.ATMO_GRAND_EST_KEY }}
+          ATMO_HDF_KEY: ${{ secrets.ATMO_HDF_KEY }}
+          ATMO_SUD_KEY: ${{ secrets.ATMO_SUD_KEY }}
+          BAIDU_IP_LOCATION_AK: ${{ secrets.BAIDU_IP_LOCATION_AK }}
+          BMKG_KEY: ${{ secrets.BMKG_KEY }}
+          CWA_KEY: ${{ secrets.CWA_KEY }}
+          ECCC_KEY: ${{ secrets.ECCC_KEY }}
+          GEO_NAMES_KEY: ${{ secrets.GEO_NAMES_KEY }}
+          MET_IE_KEY: ${{ secrets.MET_IE_KEY }}
+          MF_WSFT_JWT_KEY: ${{ secrets.MF_WSFT_JWT_KEY }}
+          MF_WSFT_KEY: ${{ secrets.MF_WSFT_KEY }}
+          OPEN_WEATHER_KEY: ${{ secrets.OPEN_WEATHER_KEY }}
+        run: |
+          set -e
+          add_key() { [ -n "$2" ] && echo "$1=$2" >> local.properties; }
+          add_key breezy.accu.key "$ACCU_WEATHER_KEY"
+          add_key breezy.aemet.key "$AEMET_KEY"
+          add_key breezy.atmoaura.key "$ATMO_AURA_KEY"
+          add_key breezy.atmofrance.key "$ATMO_FRANCE_KEY"
+          add_key breezy.atmograndest.key "$ATMO_GRAND_EST_KEY"
+          add_key breezy.atmohdf.key "$ATMO_HDF_KEY"
+          add_key breezy.atmosud.key "$ATMO_SUD_KEY"
+          add_key breezy.baiduip.key "$BAIDU_IP_LOCATION_AK"
+          add_key breezy.bmkg.key "$BMKG_KEY"
+          add_key breezy.cwa.key "$CWA_KEY"
+          add_key breezy.eccc.key "$ECCC_KEY"
+          add_key breezy.geonames.key "$GEO_NAMES_KEY"
+          add_key breezy.metie.key "$MET_IE_KEY"
+          add_key breezy.mf.jwtKey "$MF_WSFT_JWT_KEY"
+          add_key breezy.mf.key "$MF_WSFT_KEY"
+          add_key breezy.openweather.key "$OPEN_WEATHER_KEY"
+
+      - name: Assemble basic flavor
+        run: ./gradlew assembleBasicRelease
+
+      - name: Delete local.properties
+        run: rm -f local.properties
+
+      - name: Sign APK (basic)
+        uses: r0adkll/sign-android-release@a391126403df92c6a0a3988a829dd47f79b89ed7
+        with:
+          releaseDirectory: app/build/outputs/apk/basic/release
+          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+          alias: ${{ secrets.ALIAS }}
+          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: '36.0.0'
+
+      - name: Prepare APKs, compute tag & checksums, archive mapping.txt file
+        run: |
+          set -e
+          VERSION="$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)"
+          SHA="$(git rev-parse --short HEAD)"
+          TAG="v${VERSION}-dev-${SHA}"
+          echo "TAG=${TAG}" >> "$GITHUB_ENV"
+          cd app/build/outputs/apk/basic/release
+          mv app-basic-universal-release-unsigned-signed.apk breezy-weather-${TAG}_universal.apk
+          mv app-basic-arm64-v8a-release-unsigned-signed.apk breezy-weather-${TAG}_arm64-v8a.apk
+          mv app-basic-armeabi-v7a-release-unsigned-signed.apk breezy-weather-${TAG}_armeabi-v7a.apk
+          mv app-basic-x86-release-unsigned-signed.apk breezy-weather-${TAG}_x86.apk
+          mv app-basic-x86_64-release-unsigned-signed.apk breezy-weather-${TAG}_x86_64.apk
+          sha256sum breezy-weather-${TAG}_*.apk > SHA256SUMS.txt
+          cd "$OLDPWD"
+          tar -czvf mapping-${TAG}.tar.gz --directory=app/build/outputs/mapping/basicRelease/ mapping.txt
+
+      - name: Create release
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
+        with:
+          tag_name: ${{ env.TAG }}
+          name: Breezy Weather ${{ env.TAG }}
+          body: |
+            **Dev build (pre-release)**
+
+            - Branch: `${{ github.ref_name }}`
+            - Commit: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+
+            If you don’t know what to do, download and install `breezy-weather-${{ env.TAG }}_universal.apk`.
+
+            ### Checksums
+            See `SHA256SUMS.txt` attached below (SHA-256).
+          files: |
+            app/build/outputs/apk/basic/release/breezy-weather-${{ env.TAG }}_universal.apk
+            app/build/outputs/apk/basic/release/breezy-weather-${{ env.TAG }}_arm64-v8a.apk
+            app/build/outputs/apk/basic/release/breezy-weather-${{ env.TAG }}_armeabi-v7a.apk
+            app/build/outputs/apk/basic/release/breezy-weather-${{ env.TAG }}_x86.apk
+            app/build/outputs/apk/basic/release/breezy-weather-${{ env.TAG }}_x86_64.apk
+            app/build/outputs/apk/basic/release/SHA256SUMS.txt
+            mapping-${{ env.TAG }}.tar.gz
+          prerelease: true
