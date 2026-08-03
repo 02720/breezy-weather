@@ -29,6 +29,7 @@ Below, you can find details about the support and implementation status for feat
 | 🇧🇮 Burundi                       | [ClimWeb](#climweb)                                                                               | Alerts                                                                               |
 | 🇨🇦 Canada                        | [ECCC](#environment-and-climate-change-canada)                                                    | Forecast, Current, Alerts, Normals, Address                                          |
 | 🇹🇩 Chad                          | [ClimWeb](#climweb)                                                                               | Alerts, Normals                                                                      |
+| 🇨🇳 China                         | [Caiyun](#caiyun) 🔐                                                                               | Forecast, Current, Air quality, Nowcasting, Alerts                               |
 | 🇨🇳 China                         | [China](#china)                                                                                   | Forecast, Current, Air quality, Nowcasting, Alerts, Address                          |
 | 🇨🇩 Democratic Republic of Congo  | [ClimWeb](#climweb)                                                                               | Alerts                                                                               |
 | 🇩🇰 Denmark                       | [DMI](#danmarks-meteorologiske-institut)                                                          | Forecast, Alerts, Address                                                            |
@@ -428,6 +429,35 @@ Unless otherwise specified, features in the following sources will only work for
 | Precipitation Duration    | ❌           | Cloud Cover       | ❌         |
 | Wind                      | ✅           | Visibility        | ❌         |
 | Pressure                  | ✅ (Current) | Ceiling           | ❌         |
+</details>
+
+### Caiyun
+This source provides weather data from ColorfulClouds (彩云天气). A free token is required to use it, which is available for free from [彩云天气](https://caiyunapp.com/) (registration requires a phone number).
+
+| Feature                        | Detail                                                           |
+|--------------------------------|------------------------------------------------------------------|
+| 🗺️ **Coverage**               | 🇨🇳 China                                                       |
+| 📆 **Daily forecast**          | Up to 15 days (including yesterday)                              |
+| ⏱️ **Hourly forecast**         | Up to 15 days                                                    |
+| ▶️ **Current observation**     | Available: can complement another source as a **Current Source** |
+| 😶‍🌫️ **Air quality**         | Available: current observation + daily forecast                  |
+| 🤧 **Pollen**                  | Not available                                                    |
+| ☔ **Precipitation nowcasting** | Available (2 hours)                                              |
+| ⚠️ **Alerts**                  | Available (requires a token with alert permission)               |
+| 📊 **Normals**                 | Not available                                                    |
+| 🧭 **Address lookup**          | Not available                                                    |
+
+<details><summary><h4>Details of available data from Caiyun source</h4></summary>
+
+| Data                      | Available | Data              | Available   |
+|---------------------------|-----------|-------------------|-------------|
+| Weather Condition         | ✅         | Humidity          | ✅ (Current) |
+| Temperature               | ✅         | Dew Point         | ✅ (Current) |
+| Precipitation             | ✅         | UV Index          | ✅ (Daily)   |
+| Precipitation Probability | ✅         | Sunshine Duration | ❌           |
+| Precipitation Duration    | ❌         | Cloud Cover       | ✅           |
+| Wind                      | ✅         | Visibility        | ✅           |
+| Pressure                  | ✅         | Ceiling           | ❌           |
 </details>
 
 ### China

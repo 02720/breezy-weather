@@ -337,6 +337,11 @@ configure<ApplicationExtension> {
             "INFOPLAZA_KEY",
             "\"${localProperties.getProperty("breezy.infoplaza.key") ?: ""}\""
         )
+        it.buildConfigField(
+            "String",
+            "CAIYUN_KEY",
+            "\"${localProperties.getProperty("breezy.caiyun.key") ?: ""}\""
+        )
     }
 
     flavorDimensions.add("default")

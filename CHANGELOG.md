@@ -12,6 +12,7 @@
 **Sources**
 - Met Office (UK) - Fix shifted day sequence in locations with a different timezone than UTC
 - NCEI - Fix parsing error
+- Add Caiyun (China) source: forecast, current observation, air quality, precipitation nowcasting and alerts. A free token is required (registration asks for a phone number).
 
 **Technical**
 - [Breezy Update Notifier] Fix broadcast when the location list is changed from the app
