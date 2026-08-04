@@ -770,6 +770,27 @@
     <string name="settings_weather_source_open_meteo_weather_models_best_match_description">Combines the best weather models for this location</string>
     <string name="settings_weather_source_open_meteo_weather_models_seamless">Seamless</string>
     <string name="settings_weather_source_open_meteo_weather_models_seamless_description">Combines all weather models from this provider into a seamless prediction</string>
+    <string name="settings_weather_source_tjweather_weather_models">Weather models</string>
+    <string name="settings_weather_source_tjweather_weather_models_fusion">KM-Fusion</string>
+    <string name="settings_weather_source_tjweather_weather_models_fusion_description">Fuses multiple Tianji model outputs with algorithmic optimization and intelligent improvements on key weather elements. Up to 10-day forecast.</string>
+    <string name="settings_weather_source_tjweather_weather_models_t2_early">T2-Early</string>
+    <string name="settings_weather_source_tjweather_weather_models_t2_early_description">T2 physical model with rapid assimilation, producing output 2 hours earlier; 2.5 km over China and surroundings, 6 km globally. Up to 10-day forecast.</string>
+    <string name="settings_weather_source_tjweather_weather_models_t2">T2</string>
+    <string name="settings_weather_source_tjweather_weather_models_t2_description">T2 physical model; 2.5 km over China and surroundings, 6 km globally. Up to 10-day forecast.</string>
+    <string name="settings_weather_source_tjweather_weather_models_t1_ai">T1-AI</string>
+    <string name="settings_weather_source_tjweather_weather_models_t1_ai_description">T1 physical model fused with AI; uniform 12 km global grid. Up to 15-day forecast.</string>
+    <string name="settings_weather_source_tjweather_weather_models_t1h_ai">T1H-AI</string>
+    <string name="settings_weather_source_tjweather_weather_models_t1h_ai_description">T1 physical model fused with AI, with focusing technology; 3 km over China and surroundings, 12 km globally. Up to 15-day forecast.</string>
+    <string name="settings_weather_source_tjweather_weather_models_ifs">IFS</string>
+    <string name="settings_weather_source_tjweather_weather_models_ifs_description">European Centre for Medium-Range Weather Forecasts (ECMWF) integrated forecasting system. Up to 10-day forecast.</string>
+    <string name="settings_weather_source_tjweather_weather_models_gfs">GFS</string>
+    <string name="settings_weather_source_tjweather_weather_models_gfs_description">U.S. National Centers for Environmental Prediction (NCEP) global forecast system. Up to 10-day forecast.</string>
+    <string name="settings_weather_source_tjweather_weather_models_gsm">GSM</string>
+    <string name="settings_weather_source_tjweather_weather_models_gsm_description">Japan Meteorological Agency (JMA) forecast system. Up to 11-day forecast.</string>
+    <string name="settings_weather_source_tjweather_weather_models_icon">ICON</string>
+    <string name="settings_weather_source_tjweather_weather_models_icon_description">German Weather Service (DWD) forecast system. Up to 7-day forecast.</string>
+    <string name="settings_weather_source_tjweather_weather_models_gem">GEM</string>
+    <string name="settings_weather_source_tjweather_weather_models_gem_description">Environment and Climate Change Canada (ECCC) forecast system. Up to 10-day forecast.</string>
     <string name="settings_source_geonames_api_key" translatable="false">@string/settings_source_api_key</string>
     <string name="settings_weather_source_polleninfo_api_key" translatable="false">@string/settings_source_api_key</string>"
     <string name="settings_appearance">Appearance</string>

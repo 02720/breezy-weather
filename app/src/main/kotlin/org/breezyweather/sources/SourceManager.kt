@@ -120,6 +120,7 @@ import org.breezyweather.sources.polleninfo.PollenInfoService
 import org.breezyweather.sources.recosante.RecosanteService
 import org.breezyweather.sources.smg.SmgService
 import org.breezyweather.sources.smhi.SmhiService
+import org.breezyweather.sources.tjweather.TJWeatherService
 import org.breezyweather.sources.veduris.VedurIsService
 import org.breezyweather.sources.wmosevereweather.WmoSevereWeatherService
 import java.text.Collator
@@ -205,6 +206,7 @@ class SourceManager @Inject constructor(
     smgService: SmgService,
     smhiService: SmhiService,
     ssmsService: SsmsService,
+    tjWeatherService: TJWeatherService,
     vedurIsService: VedurIsService,
     wmoSevereWeatherService: WmoSevereWeatherService,
 ) {
@@ -238,6 +240,7 @@ class SourceManager @Inject constructor(
         nceiService,
         openWeatherService,
         pirateWeatherService,
+        tjWeatherService,
         wmoSevereWeatherService
     )
 

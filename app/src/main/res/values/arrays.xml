@@ -372,6 +372,32 @@
         <item>meteoswiss_icon_ch2</item>
     </string-array>
 
+    <!-- TJWeather models, in the order of the official website model selector -->
+    <string-array name="tjweather_weather_models">
+        <item>KM-Fusion</item>
+        <item>T2-Early</item>
+        <item>T2</item>
+        <item>T1-AI</item>
+        <item>T1H-AI</item>
+        <item>IFS</item>
+        <item>GFS</item>
+        <item>GSM</item>
+        <item>ICON</item>
+        <item>GEM</item>
+    </string-array>
+    <string-array name="tjweather_weather_models_values">
+        <item>nextgen</item>
+        <item>tj2_early</item>
+        <item>tj2_late</item>
+        <item>t1_ai</item>
+        <item>T1H-AI</item>
+        <item>IFS</item>
+        <item>GFS</item>
+        <item>GSM</item>
+        <item>ICON</item>
+        <item>GEM</item>
+    </string-array>
+
     <!-- Beaufort scale levels -->
     <string-array name="wind_strength_descriptions">
         <item>@string/wind_strength_0</item>

@@ -18,6 +18,7 @@ Below, you can find details about the support and implementation status for feat
 | 🌐 Worldwide                       | [Nominatim](#nominatim)                                                                           | Address                                                                              |
 | 🌐 Worldwide                       | [OpenWeather](#openweather) 🔓                                                                    | Forecast, Current, Air quality                                                       |
 | 🌐 Worldwide                       | [Pirate Weather](#pirate-weather) 🔐                                                              | Forecast, Current, Nowcasting, Alerts                                                |
+| 🌐 Worldwide                       | [Tianji Weather](#tianji-weather)                                                                 | Forecast                                                                           |
 | 🌐 Worldwide                       | [WMO Severe Weather](#wmo-severe-weather)                                                         | Alerts                                                                               |
 | 🇦🇽 Åland Islands                 | [FMI](#finnish-meteorological-institute)                                                          | Forecast, Current, Air quality, Alerts, Normals                                      |
 | 🌐 Worldwide                       | [Infoplaza](#infoplaza) 🔐                                                                        | Forecast, Current, Nowcasting                                                        |
@@ -274,6 +275,52 @@ Below, you can find details about the support and implementation status for feat
 | Precipitation Duration    | ❌         | Cloud Cover       | ✅           |
 | Wind                      | ✅         | Visibility        | ✅           |
 | Pressure                  | ✅         | Ceiling           | ❌           |
+</details>
+
+### Tianji Weather
+
+**[Tianji Weather](https://www.tjweather.com/)** (天机气象) is a weather service operated by the Chinese Academy of Sciences, providing global forecasts from several Tianji AI weather models.
+
+| Feature                        | Detail                                                              |
+|--------------------------------|---------------------------------------------------------------------|
+| 🗺️ **Coverage**               | 🌐 Worldwide                                                       |
+| 📆 **Daily forecast**          | Up to 10 to 15 days (computed from hourly data)                     |
+| ⏱️ **Hourly forecast**         | Up to 10 to 15 days depending on the selected model                 |
+| ▶️ **Current observation**     | Not available                                                       |
+| 😶‍🌫️ **Air quality**             | Not available                                                       |
+| 🤧 **Pollen**                  | Not available                                                       |
+| ☔ **Precipitation nowcasting** | Not available                                                       |
+| ⚠️ **Alerts**                  | Not available                                                       |
+| 📊 **Normals**                 | Not available                                                       |
+| 🧭 **Address lookup**          | Not available                                                       |
+
+The forecast model can be chosen per location in the per-location settings, in the
+same order as the [official website model selector](https://www.tjweather.com/vis/):
+- **KM-Fusion** (公里级融合, default): 10-day forecast
+- **T2-Early**: 10-day forecast
+- **T2**: 10-day forecast
+- **T1-AI**: 15-day forecast
+- **T1H-AI**: 15-day forecast
+- **IFS**: 10-day forecast
+- **GFS**: 10-day forecast
+- **GSM**: 11-day forecast
+- **ICON**: 7-day forecast
+- **GEM**: 10-day forecast
+
+Humidity is available for KM-Fusion, T2-Early, T2, GSM, ICON and GEM, matching
+the factors served by the official site.
+
+<details><summary><h4>Details of available data from Tianji Weather</h4></summary>
+
+| Data                      | Available  | Data              | Available    |
+|---------------------------|------------|-------------------|--------------|
+| Weather Condition         | ❌         | Humidity          | ✅ (KM-Fusion, T2-Early, T2, GSM, ICON, GEM) |
+| Temperature               | ✅         | Dew Point         | ❌           |
+| Precipitation             | ✅         | UV Index          | ❌           |
+| Precipitation Probability | ❌         | Sunshine Duration | ❌           |
+| Precipitation Duration    | ❌         | Cloud Cover       | ❌           |
+| Wind                      | ✅         | Visibility        | ❌           |
+| Pressure                  | ❌         | Ceiling           | ❌           |
 </details>
 
 ## National sources
