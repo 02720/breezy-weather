@@ -182,21 +182,21 @@ class TJWeatherService @Inject constructor(
                 val humidityQuery = model.humidity?.let {
                     mApi.getForecast(
                         location.longitude, location.latitude,
-                        model.mode, baseTime, it.production, it.factorCode
+                        model.mode, baseTime, it.production, factorCode = it.factorCode
                     ).onErrorResumeNext { Observable.just(TJWeatherResult()) }
                 } ?: Observable.just(TJWeatherResult())
                 Observable.zip(
                     mApi.getForecast(
                         location.longitude, location.latitude,
-                        model.mode, baseTime, model.temperature.production, model.temperature.factorCode
+                        model.mode, baseTime, model.temperature.production, factorCode = model.temperature.factorCode
                     ),
                     mApi.getForecast(
                         location.longitude, location.latitude,
-                        model.mode, baseTime, model.wind.production, model.wind.factorCode
+                        model.mode, baseTime, model.wind.production, factorCode = model.wind.factorCode
                     ),
                     mApi.getForecast(
                         location.longitude, location.latitude,
-                        model.mode, baseTime, model.precipitation.production, model.precipitation.factorCode
+                        model.mode, baseTime, model.precipitation.production, factorCode = model.precipitation.factorCode
                     ),
                     humidityQuery
                 ) { temperature, wind, precipitation, humidity ->
