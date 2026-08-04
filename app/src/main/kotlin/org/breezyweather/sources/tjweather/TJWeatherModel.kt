@@ -30,6 +30,16 @@ data class TJWeatherFactorQuery(
 )
 
 /**
+ * Helper to build [TJWeatherFactorQuery] instances.
+ * Must be a top-level function (not inside a companion object) because
+ * Kotlin enum constants are initialized before the companion object is ready.
+ */
+private fun factorQuery(
+    factorCode: String,
+    production: String,
+) = TJWeatherFactorQuery(factorCode, production)
+
+/**
  * TJWeather forecast models, as listed by the model selector of the official
  * website https://www.tjweather.com/vis/ (checked on 2026-08-04)
  *
@@ -122,11 +132,6 @@ enum class TJWeatherModel(
         ) = TJWeatherModel.entries.firstOrNull {
             it.id == value
         }
-
-        private fun factorQuery(
-            factorCode: String,
-            production: String,
-        ) = TJWeatherFactorQuery(factorCode, production)
     }
 
     override val valueArrayId = R.array.tjweather_weather_models_values
