@@ -169,7 +169,9 @@ class TJWeatherService @Inject constructor(
             // Take the latest base time of the model, whatever the region
             val baseTime = availability.data
                 ?.filter {
-                    it.mode == model.mode && it.factorCode == model.temperature.factorCode
+                    it.mode == model.mode &&
+                        it.production == model.temperature.production &&
+                        it.factorCode == model.temperature.factorCode
                 }
                 ?.maxByOrNull { it.baseTimeString ?: "" }
                 ?.baseTimeString
@@ -226,11 +228,16 @@ class TJWeatherService @Inject constructor(
             ?: emptyMap()
 
         val hourlyForecast = mutableListOf<HourlyWrapper>()
+        // "forecastTimeString" is written in Beijing time (UTC+8), while
+        // "forecastTime" is ISO-8601 with an explicit UTC offset (see convertToDate)
         val dateFormatter = SimpleDateFormat(FORECAST_TIME_FORMAT, Locale.ENGLISH).apply {
+            timeZone = TimeZone.getTimeZone("Asia/Shanghai")
+        }
+        val dateFormatterIso = SimpleDateFormat(ISO_FORECAST_TIME_FORMAT, Locale.ENGLISH).apply {
             timeZone = TimeZone.getTimeZone("UTC")
         }
         for (detail in temperatureDetails) {
-            val date = convertToDate(dateFormatter, detail) ?: continue
+            val date = convertToDate(dateFormatter, dateFormatterIso, detail) ?: continue
             val windDetail = windDetails[detail.forecastTimeString]
             hourlyForecast.add(
                 HourlyWrapper(
@@ -265,31 +272,38 @@ class TJWeatherService @Inject constructor(
             ?: emptyList()
     }
 
+    /**
+     * Returns the date of a forecast detail. The ISO-8601 "forecastTime" carries an
+     * explicit UTC offset and is preferred; the "forecastTimeString" (Beijing time,
+     * UTC+8) is only used as a fallback.
+     */
     private fun convertToDate(
         dateFormatter: SimpleDateFormat,
+        dateFormatterIso: SimpleDateFormat,
         detail: TJWeatherForecastDetail,
     ): Date? {
+        convertToDateFromIsoString(dateFormatterIso, detail.forecastTime)?.let { return it }
         val forecastTimeString = detail.forecastTimeString
-            ?: return convertToDateFromIsoString(detail.forecastTime)
+            ?: return null
         return try {
             dateFormatter.parse(forecastTimeString)
         } catch (e: ParseException) {
-            // Fallback on the ISO-8601 forecast time if the string format changes
-            convertToDateFromIsoString(detail.forecastTime)
+            null
         }
     }
 
     /**
-     * Parse the ISO-8601 forecast time, always in UTC (e.g. "2026-08-04T01:00:00.000+00:00")
+     * Parse the ISO-8601 forecast time (e.g. "2026-08-05T01:00:00.000+00:00").
+     * The TJWeather API always writes a "+00:00" offset, so the milliseconds and
+     * offset can safely be truncated and the time parsed as UTC.
      */
     private fun convertToDateFromIsoString(
+        dateFormatterIso: SimpleDateFormat,
         forecastTime: String?,
     ): Date? {
         if (forecastTime == null) return null
         return try {
-            SimpleDateFormat(ISO_FORECAST_TIME_FORMAT, Locale.ENGLISH).apply {
-                timeZone = TimeZone.getTimeZone("UTC")
-            }.parse(forecastTime.substringBefore('.'))
+            dateFormatterIso.parse(forecastTime.substringBefore('.'))
         } catch (e: Exception) {
             null
         }
@@ -306,10 +320,10 @@ class TJWeatherService @Inject constructor(
         val dailyList = mutableListOf<DailyWrapper>()
         var lastDayDate: Date? = null
         for (hourly in hourlyForecast) {
+            // Day boundaries are at local midnight
             val dayDate = hourly.date
                 .toCalendarWithTimeZone(location.timeZone)
                 .apply {
-                    add(Calendar.HOUR_OF_DAY, 1)
                     set(Calendar.HOUR_OF_DAY, 0)
                     set(Calendar.MINUTE, 0)
                     set(Calendar.SECOND, 0)
@@ -488,7 +502,9 @@ class TJWeatherService @Inject constructor(
     companion object {
         private const val BASE_URL = "https://www.tjweather.com/meteorological/"
 
-        // Forecast times are UTC: e.g. "2026080409" or "2026-08-04T01:00:00.000+00:00"
+        // "forecastTimeString" (e.g. "2026080509") is written in Beijing time (UTC+8),
+        // while "forecastTime" is ISO-8601 with an explicit UTC offset
+        // (e.g. "2026-08-05T01:00:00.000+00:00")
         // The ISO-8601 format must not use the "X" pattern (not supported on all API levels)
         private const val FORECAST_TIME_FORMAT = "yyyyMMddHH"
         private const val ISO_FORECAST_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss"
