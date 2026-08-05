@@ -74,7 +74,7 @@ class TJWeatherService @Inject constructor(
 ) : HttpSource(), WeatherSource, PreferencesParametersSource {
 
     override val id = "tjweather"
-    override val name = "Tianji Weather"
+    override val name = "中科天机"
     override val continent = SourceContinent.WORLDWIDE
     override val privacyPolicyUrl = "https://www.tjweather.com/agreementProfile"
 

@@ -20,7 +20,6 @@ import android.content.Context
 import breezyweather.domain.location.model.Location
 import breezyweather.domain.source.SourceContinent
 import breezyweather.domain.source.SourceFeature
-import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.extensions.getCountryName
 import org.breezyweather.common.source.HttpSource
 import org.breezyweather.common.source.LocationParametersSource
@@ -40,7 +39,7 @@ abstract class ChinaServiceStub(context: Context) :
     NonFreeNetSource {
 
     override val id = "china"
-    override val name = context.currentLocale.getCountryName("CN")
+    override val name = "小米天气"
     override val continent = SourceContinent.ASIA
 
     override val locationSearchAttribution = "北京天气、彩云天气、中国环境监测总站"

@@ -37,7 +37,7 @@ abstract class CaiyunServiceStub(context: Context) :
     NonFreeNetSource {
 
     override val id = "caiyun"
-    override val name = "Caiyun"
+    override val name = "彩云天气"
     override val continent = SourceContinent.ASIA
 
     override val supportedFeatures = mapOf(
