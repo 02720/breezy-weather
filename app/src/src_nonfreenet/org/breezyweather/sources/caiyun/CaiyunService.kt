@@ -57,6 +57,8 @@ import org.breezyweather.sources.caiyun.json.CaiyunHourly
 import org.breezyweather.sources.caiyun.json.CaiyunHourlyWind
 import org.breezyweather.sources.caiyun.json.CaiyunResult
 import org.breezyweather.sources.caiyun.json.CaiyunWeatherResult
+import org.breezyweather.sources.common.buildChineseAlertHeadline
+import org.breezyweather.sources.common.getCleanChineseAlertTitle
 import org.breezyweather.unit.distance.Distance.Companion.kilometers
 import org.breezyweather.unit.pollutant.PollutantConcentration.Companion.microgramsPerCubicMeter
 import org.breezyweather.unit.pollutant.PollutantConcentration.Companion.milligramsPerCubicMeter
@@ -333,27 +335,44 @@ class CaiyunService @Inject constructor(
     private fun getAlertList(alertList: List<CaiyunAlertContent>?): List<Alert>? {
         if (alertList.isNullOrEmpty()) return null
         return alertList.map { alert ->
-            val severity = getAlertSeverity(alert.severity)
-            // Build a descriptive headline: "{typeName}{colorName}预警"
-            // e.g., "雷电黄色预警", "暴雨橙色预警"
-            val headline = alert.headline?.ifEmpty { null }
-                ?: alert.title?.ifEmpty { null }
-                ?: buildString {
-                    alert.typeName?.let { append(it) }
-                    getAlertColorName(alert.subtype?.color)?.let { append(it) }
-                    if (isNotEmpty()) append("预警")
-                }.ifEmpty { null }
+            val levelCode = getAlertLevelCode(alert.code)
+            val severity = getAlertLevelSeverity(levelCode) ?: getAlertSeverity(alert.severity)
             Alert(
                 alertId = alert.alertId ?: Objects.hash(alert.title, alert.pubtimestamp).toString(),
                 startDate = alert.effective ?: alert.pubtimestamp?.seconds?.inWholeMilliseconds?.toDate(),
                 endDate = alert.expires,
-                headline = headline,
+                headline = getAlertHeadline(alert),
                 description = alert.description,
                 source = alert.source,
                 severity = severity,
-                color = getAlertColor(alert.subtype?.color) ?: Alert.colorFromSeverity(severity)
+                color = getAlertLevelColor(levelCode)
+                    ?: getAlertColor(alert.subtype?.color)
+                    ?: Alert.colorFromSeverity(severity)
             )
         }
+    }
+
+    /**
+     * Builds a concise headline "{typeName}{levelName}预警", e.g. "雷电黄色预警",
+     * from the 4-digit "code" field. Falls back to cleaning the provider's raw
+     * title/headline when the code cannot be decoded.
+     */
+    private fun getAlertHeadline(alert: CaiyunAlertContent): String? {
+        if (chinese) {
+            buildChineseAlertHeadline(
+                typeName = getAlertTypeName(alert.code),
+                levelName = getAlertLevelName(alert.code)
+            )?.let { return it }
+        }
+        val cleaned = getCleanChineseAlertTitle(alert.title ?: alert.headline)
+        if (cleaned != null) return cleaned
+        return alert.headline?.ifEmpty { null }
+            ?: alert.title?.ifEmpty { null }
+            ?: buildString {
+                alert.typeName?.let { append(it) }
+                getAlertColorName(alert.subtype?.color)?.let { append(it) }
+                if (isNotEmpty()) append("预警")
+            }.ifEmpty { null }
     }
 
     /**

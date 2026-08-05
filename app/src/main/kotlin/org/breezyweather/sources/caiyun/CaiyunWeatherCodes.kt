@@ -113,3 +113,101 @@ internal fun getAlertColorName(color: String?): String? {
         else -> null
     }
 }
+
+/**
+ * The v2.6 alert API encodes type and level in a 4-digit "code" field whose
+ * first two digits are the alert type and last two digits the alert level,
+ * e.g. "0902" means "雷电" (type 09) "黄色" (level 02).
+ * See https://docs.caiyunapp.com/weather-api/v2/v2.6/5-alert.html
+ */
+
+private val ALERT_TYPE_NAME_BY_CODE = mapOf(
+    "01" to "台风",
+    "02" to "暴雨",
+    "03" to "暴雪",
+    "04" to "寒潮",
+    "05" to "大风",
+    "06" to "沙尘暴",
+    "07" to "高温",
+    "08" to "干旱",
+    "09" to "雷电",
+    "10" to "冰雹",
+    "11" to "霜冻",
+    "12" to "大雾",
+    "13" to "霾",
+    "14" to "道路结冰",
+    "15" to "森林火险",
+    "16" to "雷雨大风",
+    "17" to "春季沙尘天气趋势预警",
+    "18" to "沙尘"
+)
+
+private val ALERT_LEVEL_NAME_BY_CODE = mapOf(
+    "00" to "白色",
+    "01" to "蓝色",
+    "02" to "黄色",
+    "03" to "橙色",
+    "04" to "红色"
+)
+
+/**
+ * Returns the alert type code (first 2 digits of the 4-digit "code" field),
+ * or null if the code is not in the expected format.
+ */
+internal fun getAlertTypeCode(code: String?): String? {
+    if (code.isNullOrEmpty() || code.length != 4) return null
+    return code.substring(0, 2)
+}
+
+/**
+ * Returns the alert level code (last 2 digits of the 4-digit "code" field),
+ * or null if the code is not in the expected format.
+ */
+internal fun getAlertLevelCode(code: String?): String? {
+    if (code.isNullOrEmpty() || code.length != 4) return null
+    return code.substring(2)
+}
+
+/**
+ * Maps the alert type code to its Chinese name, e.g. "09" -> "雷电"
+ */
+internal fun getAlertTypeName(code: String?): String? {
+    return getAlertTypeCode(code)?.let { ALERT_TYPE_NAME_BY_CODE[it] }
+}
+
+/**
+ * Maps the alert level code to its Chinese level name, e.g. "02" -> "黄色"
+ */
+internal fun getAlertLevelName(code: String?): String? {
+    return getAlertLevelCode(code)?.let { ALERT_LEVEL_NAME_BY_CODE[it] }
+}
+
+/**
+ * Maps a Caiyun alert level code to a color, following the Chinese warning
+ * color levels (white, blue, yellow, orange, red)
+ */
+@ColorInt
+internal fun getAlertLevelColor(levelCode: String?): Int? {
+    return when (levelCode) {
+        "00" -> Color.rgb(155, 163, 170)
+        "01" -> Color.rgb(51, 100, 255)
+        "02" -> Color.rgb(250, 237, 36)
+        "03" -> Color.rgb(249, 138, 30)
+        "04" -> Color.rgb(215, 48, 42)
+        else -> null
+    }
+}
+
+/**
+ * Maps a Caiyun alert level code to an [AlertSeverity], following the Chinese
+ * warning color levels (white, blue, yellow, orange, red)
+ */
+internal fun getAlertLevelSeverity(levelCode: String?): AlertSeverity? {
+    return when (levelCode) {
+        "00", "01" -> AlertSeverity.MINOR
+        "02" -> AlertSeverity.MODERATE
+        "03" -> AlertSeverity.SEVERE
+        "04" -> AlertSeverity.EXTREME
+        else -> null
+    }
+}

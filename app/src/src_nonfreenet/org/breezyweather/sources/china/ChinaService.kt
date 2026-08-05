@@ -51,6 +51,8 @@ import org.breezyweather.sources.china.json.ChinaForecastHourly
 import org.breezyweather.sources.china.json.ChinaForecastResult
 import org.breezyweather.sources.china.json.ChinaLocationResult
 import org.breezyweather.sources.china.json.ChinaMinutelyResult
+import org.breezyweather.sources.common.buildChineseAlertHeadline
+import org.breezyweather.sources.common.getCleanChineseAlertTitle
 import org.breezyweather.unit.distance.Distance.Companion.kilometers
 import org.breezyweather.unit.pollutant.PollutantConcentration.Companion.microgramsPerCubicMeter
 import org.breezyweather.unit.pollutant.PollutantConcentration.Companion.milligramsPerCubicMeter
@@ -437,12 +439,27 @@ class ChinaService @Inject constructor(
                 alertId = Objects.hash(alert.title, alert.level, alert.pubTime?.time ?: System.currentTimeMillis())
                     .toString(),
                 startDate = alert.pubTime,
-                headline = alert.title,
+                headline = getAlertHeadline(alert.type, alert.level, alert.title),
                 description = alert.detail,
                 severity = getAlertPriority(alert.level),
                 color = getAlertColor(alert.level) ?: Alert.colorFromSeverity(AlertSeverity.UNKNOWN)
             )
         }
+    }
+
+    /**
+     * Builds a concise headline "{type}{level}预警", e.g. "雷电黄色预警", from the
+     * structured alert type/level fields, falling back to the raw title cleaned
+     * of its publisher prefix and qualifiers.
+     */
+    private fun getAlertHeadline(
+        type: String?,
+        level: String?,
+        title: String?,
+    ): String? {
+        return buildChineseAlertHeadline(type, level)
+            ?: getCleanChineseAlertTitle(title)
+            ?: title?.ifEmpty { null }
     }
 
     private fun getWeatherText(icon: String?): String {

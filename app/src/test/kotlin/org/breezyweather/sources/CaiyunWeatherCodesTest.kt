@@ -5,9 +5,17 @@ import breezyweather.domain.weather.reference.WeatherCode
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
 import org.breezyweather.sources.caiyun.getAlertColor
+import org.breezyweather.sources.caiyun.getAlertLevelCode
+import org.breezyweather.sources.caiyun.getAlertLevelColor
+import org.breezyweather.sources.caiyun.getAlertLevelName
+import org.breezyweather.sources.caiyun.getAlertLevelSeverity
 import org.breezyweather.sources.caiyun.getAlertSeverity
+import org.breezyweather.sources.caiyun.getAlertTypeCode
+import org.breezyweather.sources.caiyun.getAlertTypeName
 import org.breezyweather.sources.caiyun.getWeatherCode
 import org.breezyweather.sources.caiyun.getWeatherText
+import org.breezyweather.sources.common.buildChineseAlertHeadline
+import org.breezyweather.sources.common.getCleanChineseAlertTitle
 import org.junit.jupiter.api.Test
 
 class CaiyunWeatherCodesTest {
@@ -91,5 +99,84 @@ class CaiyunWeatherCodesTest {
         getAlertColor("yellow") shouldBe android.graphics.Color.rgb(250, 237, 36)
         getAlertColor("blue") shouldBe android.graphics.Color.rgb(51, 100, 255)
         getAlertColor("green") shouldBe null
+    }
+
+    @Test
+    fun getAlertTypeCodeTest() = runTest {
+        getAlertTypeCode(null) shouldBe null
+        getAlertTypeCode("") shouldBe null
+        getAlertTypeCode("123") shouldBe null
+        getAlertTypeCode("0902") shouldBe "09"
+    }
+
+    @Test
+    fun getAlertLevelCodeTest() = runTest {
+        getAlertLevelCode(null) shouldBe null
+        getAlertLevelCode("123") shouldBe null
+        getAlertLevelCode("0902") shouldBe "02"
+    }
+
+    @Test
+    fun getAlertTypeNameTest() = runTest {
+        getAlertTypeName(null) shouldBe null
+        getAlertTypeName("0902") shouldBe "雷电"
+        getAlertTypeName("0501") shouldBe "大风"
+        getAlertTypeName("1701") shouldBe "春季沙尘天气趋势预警"
+        getAlertTypeName("9901") shouldBe null
+    }
+
+    @Test
+    fun getAlertLevelNameTest() = runTest {
+        getAlertLevelName(null) shouldBe null
+        getAlertLevelName("0902") shouldBe "黄色"
+        getAlertLevelName("0501") shouldBe "蓝色"
+        getAlertLevelName("0204") shouldBe "红色"
+        getAlertLevelName("0909") shouldBe null
+    }
+
+    @Test
+    fun getAlertLevelColorTest() = runTest {
+        getAlertLevelColor(null) shouldBe null
+        getAlertLevelColor("00") shouldBe android.graphics.Color.rgb(155, 163, 170)
+        getAlertLevelColor("01") shouldBe android.graphics.Color.rgb(51, 100, 255)
+        getAlertLevelColor("02") shouldBe android.graphics.Color.rgb(250, 237, 36)
+        getAlertLevelColor("03") shouldBe android.graphics.Color.rgb(249, 138, 30)
+        getAlertLevelColor("04") shouldBe android.graphics.Color.rgb(215, 48, 42)
+        getAlertLevelColor("05") shouldBe null
+    }
+
+    @Test
+    fun getAlertLevelSeverityTest() = runTest {
+        getAlertLevelSeverity(null) shouldBe null
+        getAlertLevelSeverity("00") shouldBe AlertSeverity.MINOR
+        getAlertLevelSeverity("01") shouldBe AlertSeverity.MINOR
+        getAlertLevelSeverity("02") shouldBe AlertSeverity.MODERATE
+        getAlertLevelSeverity("03") shouldBe AlertSeverity.SEVERE
+        getAlertLevelSeverity("04") shouldBe AlertSeverity.EXTREME
+        getAlertLevelSeverity("99") shouldBe null
+    }
+
+    @Test
+    fun buildChineseAlertHeadlineTest() = runTest {
+        buildChineseAlertHeadline(null, null) shouldBe null
+        buildChineseAlertHeadline("", "黄色") shouldBe null
+        buildChineseAlertHeadline("雷电", null) shouldBe null
+        buildChineseAlertHeadline("雷电", "") shouldBe null
+        buildChineseAlertHeadline("雷电", "黄色") shouldBe "雷电黄色预警"
+        buildChineseAlertHeadline("春季沙尘天气趋势预警", "黄色") shouldBe "春季沙尘天气趋势预警"
+        buildChineseAlertHeadline("  雷电  ", " 黄色 ") shouldBe "雷电黄色预警"
+    }
+
+    @Test
+    fun getCleanChineseAlertTitleTest() = runTest {
+        getCleanChineseAlertTitle(null) shouldBe null
+        getCleanChineseAlertTitle("   ") shouldBe null
+        getCleanChineseAlertTitle("雷电黄色预警") shouldBe "雷电黄色预警"
+        getCleanChineseAlertTitle("平南县气象台发布雷电黄色预警信号[III级/较重]") shouldBe
+            "雷电黄色预警"
+        getCleanChineseAlertTitle("平南发布雷电黄色预警") shouldBe "雷电黄色预警"
+        getCleanChineseAlertTitle("北京市气象台发布大风蓝色预警") shouldBe "大风蓝色预警"
+        getCleanChineseAlertTitle("大雾橙色预警（已解除）") shouldBe "大雾橙色预警"
+        getCleanChineseAlertTitle("大风蓝色预警（已发布）") shouldBe "大风蓝色预警"
     }
 }
