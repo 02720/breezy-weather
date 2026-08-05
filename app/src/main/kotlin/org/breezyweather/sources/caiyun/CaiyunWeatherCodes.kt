@@ -100,3 +100,16 @@ internal fun getAlertColor(color: String?): Int? {
         else -> null
     }
 }
+
+/**
+ * Maps the Caiyun alert subtype color to Chinese color name for display
+ */
+internal fun getAlertColorName(color: String?): String? {
+    return when (color?.lowercase()) {
+        "red" -> "红色"
+        "orange" -> "橙色"
+        "yellow" -> "黄色"
+        "blue" -> "蓝色"
+        else -> null
+    }
+}

@@ -334,11 +334,20 @@ class CaiyunService @Inject constructor(
         if (alertList.isNullOrEmpty()) return null
         return alertList.map { alert ->
             val severity = getAlertSeverity(alert.severity)
+            // Build a descriptive headline: "{typeName}{colorName}预警"
+            // e.g., "雷电黄色预警", "暴雨橙色预警"
+            val headline = alert.headline?.ifEmpty { null }
+                ?: alert.title?.ifEmpty { null }
+                ?: buildString {
+                    alert.typeName?.let { append(it) }
+                    getAlertColorName(alert.subtype?.color)?.let { append(it) }
+                    if (isNotEmpty()) append("预警")
+                }.ifEmpty { null }
             Alert(
                 alertId = alert.alertId ?: Objects.hash(alert.title, alert.pubtimestamp).toString(),
                 startDate = alert.effective ?: alert.pubtimestamp?.seconds?.inWholeMilliseconds?.toDate(),
                 endDate = alert.expires,
-                headline = alert.headline,
+                headline = headline,
                 description = alert.description,
                 source = alert.source,
                 severity = severity,
