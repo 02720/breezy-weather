@@ -118,14 +118,37 @@ internal fun completeNewWeatherWithPreviousData(
         return newWeather
     }
 
+    // If the refreshed source does not provide precipitation probability at all,
+    // the previous data kept in database must not keep its own probability:
+    // mixing the probability of a previous source with the current one would show
+    // probability bars that stop exactly where the current forecast begins
+    // (e.g. "probability until 4 AM, nothing after")
+    val newForecastHasPrecipitationProbability = newWeather.hourlyForecast
+        ?.any { it.precipitationProbability != null } == true
+
     val missingDailyList = oldWeather.dailyForecast.filter {
         it.date >= startDate &&
             (newWeather.dailyForecast?.getOrNull(0) == null || it.date < newWeather.dailyForecast!![0].date)
-    }.map { it.toDailyWrapper() }
+    }.map { daily ->
+        if (newForecastHasPrecipitationProbability) {
+            daily.toDailyWrapper()
+        } else {
+            daily.toDailyWrapper().copy(
+                day = daily.day?.toHalfDayWrapper()?.copy(precipitationProbability = null),
+                night = daily.night?.toHalfDayWrapper()?.copy(precipitationProbability = null)
+            )
+        }
+    }
     val missingHourlyList = oldWeather.hourlyForecast.filter {
         it.date >= startDate &&
             (newWeather.hourlyForecast?.getOrNull(0) == null || it.date < newWeather.hourlyForecast!![0].date)
-    }.map { it.toHourlyWrapper() }
+    }.map { hourly ->
+        if (newForecastHasPrecipitationProbability) {
+            hourly.toHourlyWrapper()
+        } else {
+            hourly.toHourlyWrapper().copy(precipitationProbability = null)
+        }
+    }
     val missingDailyAirQualityList = oldWeather.dailyForecast.filter {
         it.date >= startDate &&
             it.airQuality?.isValid == true &&

@@ -68,6 +68,17 @@ import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Named
 
+/**
+ * The four factor results of a single base run, grouped together so that they can
+ * be sent through Observable.zip() (which cannot emit a null value)
+ */
+private data class ModelForecastData(
+    val temperature: TJWeatherResult,
+    val wind: TJWeatherResult,
+    val precipitation: TJWeatherResult,
+    val humidity: TJWeatherResult,
+)
+
 class TJWeatherService @Inject constructor(
     @ApplicationContext context: Context,
     @Named("JsonClient") val client: Retrofit.Builder,
@@ -155,8 +166,15 @@ class TJWeatherService @Inject constructor(
 
     /**
      * Fetch the forecast of a single model:
-     * 1. Get the latest base time of the model from the availability endpoint
-     * 2. Query each factor for that base time, and merge them by forecast time
+     * 1. Get the available base times of the model from the availability endpoint,
+     *    newest first
+     * 2. Query each factor for the newest base time, and merge them by forecast time.
+     *
+     * The factors of a base run are not necessarily all published at the same moment
+     * (e.g. the precipitation product can be a few minutes late compared to the
+     * temperature product): querying a factor at a base time it does not cover yet
+     * returns an empty list, which would silently drop the whole factor. When that
+     * happens we fall back to the previous base run (see getModelForecastAtBaseTime).
      */
     private fun getModelForecast(
         location: Location,
@@ -166,64 +184,113 @@ class TJWeatherService @Inject constructor(
             model.temperature.factorCode,
             model.temperature.production
         ).flatMap { availability ->
-            // Take the latest base time of the model, whatever the region
-            val baseTime = availability.data
+            val baseTimes = availability.data
                 ?.filter {
                     it.mode == model.mode &&
                         it.production == model.temperature.production &&
                         it.factorCode == model.temperature.factorCode
                 }
-                ?.maxByOrNull { it.baseTimeString ?: "" }
-                ?.baseTimeString
-            if (baseTime.isNullOrEmpty()) {
+                ?.mapNotNull { it.baseTimeString?.takeIf { baseTime -> baseTime.isNotBlank() } }
+                ?.distinct()
+                ?.sortedDescending()
+                // Only the newest base runs are relevant: a factor publication lag
+                // is a matter of minutes, and this bounds the fallback requests
+                ?.take(MAX_BASE_TIME_ATTEMPTS)
+            if (baseTimes.isNullOrEmpty()) {
                 // Model has no forecast available right now
                 Observable.just(emptyList())
             } else {
-                // Humidity is not available for every model, and is optional:
-                // a failure on it must not prevent the rest of the forecast
-                val humidityQuery = model.humidity?.let {
-                    mApi.getForecast(
-                        location.longitude, location.latitude,
-                        model.mode, baseTime, it.production, factorCode = it.factorCode
-                    ).onErrorResumeNext { Observable.just(TJWeatherResult()) }
-                } ?: Observable.just(TJWeatherResult())
-                Observable.zip(
-                    mApi.getForecast(
-                        location.longitude, location.latitude,
-                        model.mode, baseTime, model.temperature.production, factorCode = model.temperature.factorCode
-                    ),
-                    mApi.getForecast(
-                        location.longitude, location.latitude,
-                        model.mode, baseTime, model.wind.production, factorCode = model.wind.factorCode
-                    ),
-                    mApi.getForecast(
-                        location.longitude, location.latitude,
-                        model.mode, baseTime, model.precipitation.production, factorCode = model.precipitation.factorCode
-                    ),
-                    humidityQuery
-                ) { temperature, wind, precipitation, humidity ->
-                    convertToHourlyForecast(temperature, wind, precipitation, humidity, model)
-                }
+                getModelForecastAtBaseTime(location, model, baseTimes, 0)
             }
         }
     }
 
+    /**
+     * Fetch the forecast of the model at the given base time, and retry with the
+     * previous base time if a required factor is missing for this base run
+     */
+    private fun getModelForecastAtBaseTime(
+        location: Location,
+        model: TJWeatherModel,
+        baseTimes: List<String>,
+        baseTimeIndex: Int,
+    ): Observable<List<HourlyWrapper>> {
+        val baseTime = baseTimes[baseTimeIndex]
+        // Humidity is not available for every model, and is optional:
+        // a failure on it must not prevent the rest of the forecast
+        val humidityQuery = model.humidity?.let {
+            mApi.getForecast(
+                location.longitude, location.latitude,
+                model.mode, baseTime, it.production, factorCode = it.factorCode
+            ).onErrorResumeNext { Observable.just(TJWeatherResult()) }
+        } ?: Observable.just(TJWeatherResult())
+        // zip() cannot emit a null, so the results are first grouped into a holder,
+        // and the base-time fallback decision is taken inside flatMap
+        return Observable.zip(
+            mApi.getForecast(
+                location.longitude, location.latitude,
+                model.mode, baseTime, model.temperature.production, factorCode = model.temperature.factorCode
+            ),
+            mApi.getForecast(
+                location.longitude, location.latitude,
+                model.mode, baseTime, model.wind.production, factorCode = model.wind.factorCode
+            ),
+            mApi.getForecast(
+                location.longitude, location.latitude,
+                model.mode, baseTime, model.precipitation.production, factorCode = model.precipitation.factorCode
+            ),
+            humidityQuery
+        ) { temperature, wind, precipitation, humidity ->
+            ModelForecastData(temperature, wind, precipitation, humidity)
+        }.flatMap { forecastData ->
+            // On the last available base time, incomplete factors are tolerated
+            // (graceful degradation) instead of failing the whole forecast
+            val hourlyForecast = convertToHourlyForecast(
+                forecastData.temperature,
+                forecastData.wind,
+                forecastData.precipitation,
+                forecastData.humidity,
+                model,
+                allowIncompleteFactors = baseTimeIndex + 1 >= baseTimes.size
+            )
+            if (hourlyForecast == null) {
+                // A required factor (e.g. precipitation) is not published yet for
+                // this base run: retry with the previous base run
+                getModelForecastAtBaseTime(location, model, baseTimes, baseTimeIndex + 1)
+            } else {
+                Observable.just(hourlyForecast)
+            }
+        }
+    }
+
+    /**
+     * @return the merged hourly forecast; an empty list if the model has no
+     * forecast for this location at this base time; null if a required factor
+     * (wind or precipitation) is missing for this base run and
+     * [allowIncompleteFactors] is false (the caller can then fall back to a
+     * previous base run)
+     */
     private fun convertToHourlyForecast(
         temperature: TJWeatherResult,
         wind: TJWeatherResult,
         precipitation: TJWeatherResult,
         humidity: TJWeatherResult,
         model: TJWeatherModel,
-    ): List<HourlyWrapper> {
+        allowIncompleteFactors: Boolean,
+    ): List<HourlyWrapper>? {
         val temperatureDetails = getFactorDetails(temperature, model.temperature.factorCode)
         if (temperatureDetails.isEmpty()) return emptyList()
 
         // Factor codes are model-specific (e.g. "w10m" for the NWP models)
         val windDetails = getFactorDetails(wind, model.wind.factorCode)
-            .associateBy { it.forecastTimeString }
         val precipitationDetails = getFactorDetails(precipitation, model.precipitation.factorCode)
-            .associateBy { it.forecastTimeString }
-        val humidityDetails = model.humidity
+        if (!allowIncompleteFactors && (windDetails.isEmpty() || precipitationDetails.isEmpty())) {
+            // The wind or precipitation product is not published yet for this base run
+            return null
+        }
+        val windDetailsByTime = windDetails.associateBy { it.forecastTimeString }
+        val precipitationDetailsByTime = precipitationDetails.associateBy { it.forecastTimeString }
+        val humidityDetailsByTime = model.humidity
             ?.let { getFactorDetails(humidity, it.factorCode).associateBy { it.forecastTimeString } }
             ?: emptyMap()
 
@@ -238,7 +305,7 @@ class TJWeatherService @Inject constructor(
         }
         for (detail in temperatureDetails) {
             val date = convertToDate(dateFormatter, dateFormatterIso, detail) ?: continue
-            val windDetail = windDetails[detail.forecastTimeString]
+            val windDetail = windDetailsByTime[detail.forecastTimeString]
             hourlyForecast.add(
                 HourlyWrapper(
                     date = date,
@@ -247,14 +314,14 @@ class TJWeatherService @Inject constructor(
                     ),
                     precipitation = Precipitation(
                         // Precipitation rate in mm/h, equivalent to the hourly accumulation
-                        total = precipitationDetails[detail.forecastTimeString]
+                        total = precipitationDetailsByTime[detail.forecastTimeString]
                             ?.value?.getOrNull(0)?.millimeters
                     ),
                     wind = Wind(
                         degree = windDetail?.value?.getOrNull(3),
                         speed = windDetail?.value?.getOrNull(2)?.metersPerSecond
                     ),
-                    relativeHumidity = humidityDetails[detail.forecastTimeString]
+                    relativeHumidity = humidityDetailsByTime[detail.forecastTimeString]
                         ?.value?.getOrNull(0)?.percent
                 )
             )
@@ -501,6 +568,10 @@ class TJWeatherService @Inject constructor(
 
     companion object {
         private const val BASE_URL = "https://www.tjweather.com/meteorological/"
+
+        // How many of the newest base runs are tried before giving up on a
+        // missing factor (see getModelForecastAtBaseTime)
+        private const val MAX_BASE_TIME_ATTEMPTS = 3
 
         // "forecastTimeString" (e.g. "2026080509") is written in Beijing time (UTC+8),
         // while "forecastTime" is ISO-8601 with an explicit UTC offset
