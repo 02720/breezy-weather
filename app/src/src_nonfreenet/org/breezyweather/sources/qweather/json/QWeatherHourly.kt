@@ -23,6 +23,11 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class QWeatherHourlyResult(
+    /**
+     * Body-level status code: "200" success, "204" no data. QWeather answers with HTTP 200
+     * even for errors (401/402/403/429/5xx), which are only detectable through this field.
+     */
+    val code: String? = null,
     val hours: List<QWeatherHourly>? = null,
 )
 

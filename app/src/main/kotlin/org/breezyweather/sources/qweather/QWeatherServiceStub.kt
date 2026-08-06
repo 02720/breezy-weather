@@ -26,7 +26,7 @@ import org.breezyweather.common.source.WeatherSource
 import org.breezyweather.common.source.WeatherSource.Companion.PRIORITY_NONE
 
 /**
- * QWeather (和风天气). A worldwide multi-model blended forecast with strong China coverage,
+ * 和风天气 (QWeather). A worldwide multi-model blended forecast with strong China coverage,
  * also providing air quality, minutely precipitation (China only) and official weather alerts.
  *
  * The actual implementation lives in the src_freenet and src_nonfreenet folders.
@@ -38,7 +38,7 @@ abstract class QWeatherServiceStub() :
     NonFreeNetSource {
 
     override val id = "qweather"
-    override val name = "QWeather"
+    override val name = "和风天气"
     override val continent = SourceContinent.WORLDWIDE
 
     override val supportedFeatures = mapOf(

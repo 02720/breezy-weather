@@ -33,14 +33,17 @@ import retrofit2.http.Query
  * QWeather API. Uses the modern v1 endpoints (lat/lon path parameters) for weather, alerts and
  * air quality, and the legacy v7 endpoint for minutely precipitation (China only).
  *
- * Authentication is done with an API Key passed via the `X-QW-Api-Key` header, which is supported
- * by every endpoint used here. The base URL is the developer's personal API Host.
+ * Authentication supports both methods offered by QWeather: an API Key passed via the
+ * `X-QW-Api-Key` header, or a JWT passed via the `Authorization: Bearer` header. Exactly one of
+ * the two parameters is non-null on every call; Retrofit omits null-valued headers. The base
+ * URL is the developer's personal API Host.
  */
 interface QWeatherApi {
 
     @GET("weather/v1/current/{lat}/{lon}")
     fun getCurrent(
-        @Header("X-QW-Api-Key") apiKey: String,
+        @Header("X-QW-Api-Key") apiKey: String?,
+        @Header("Authorization") authorization: String?,
         @Path("lat") lat: Double,
         @Path("lon") lon: Double,
         @Query("lang") lang: String,
@@ -48,7 +51,8 @@ interface QWeatherApi {
 
     @GET("weather/v1/daily/{lat}/{lon}")
     fun getDaily(
-        @Header("X-QW-Api-Key") apiKey: String,
+        @Header("X-QW-Api-Key") apiKey: String?,
+        @Header("Authorization") authorization: String?,
         @Path("lat") lat: Double,
         @Path("lon") lon: Double,
         @Query("days") days: Int,
@@ -57,7 +61,8 @@ interface QWeatherApi {
 
     @GET("weather/v1/hourly/{lat}/{lon}")
     fun getHourly(
-        @Header("X-QW-Api-Key") apiKey: String,
+        @Header("X-QW-Api-Key") apiKey: String?,
+        @Header("Authorization") authorization: String?,
         @Path("lat") lat: Double,
         @Path("lon") lon: Double,
         @Query("hours") hours: Int,
@@ -66,14 +71,16 @@ interface QWeatherApi {
 
     @GET("v7/minutely/5m")
     fun getMinutely(
-        @Header("X-QW-Api-Key") apiKey: String,
+        @Header("X-QW-Api-Key") apiKey: String?,
+        @Header("Authorization") authorization: String?,
         @Query("location") location: String,
         @Query("lang") lang: String,
     ): Observable<QWeatherMinutelyResult>
 
     @GET("weatheralert/v1/current/{lat}/{lon}")
     fun getAlert(
-        @Header("X-QW-Api-Key") apiKey: String,
+        @Header("X-QW-Api-Key") apiKey: String?,
+        @Header("Authorization") authorization: String?,
         @Path("lat") lat: Double,
         @Path("lon") lon: Double,
         @Query("lang") lang: String,
@@ -81,7 +88,8 @@ interface QWeatherApi {
 
     @GET("airquality/v1/current/{lat}/{lon}")
     fun getAirCurrent(
-        @Header("X-QW-Api-Key") apiKey: String,
+        @Header("X-QW-Api-Key") apiKey: String?,
+        @Header("Authorization") authorization: String?,
         @Path("lat") lat: Double,
         @Path("lon") lon: Double,
         @Query("lang") lang: String,
@@ -89,7 +97,8 @@ interface QWeatherApi {
 
     @GET("airquality/v1/hourly/{lat}/{lon}")
     fun getAirHourly(
-        @Header("X-QW-Api-Key") apiKey: String,
+        @Header("X-QW-Api-Key") apiKey: String?,
+        @Header("Authorization") authorization: String?,
         @Path("lat") lat: Double,
         @Path("lon") lon: Double,
         @Query("lang") lang: String,

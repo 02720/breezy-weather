@@ -23,6 +23,12 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class QWeatherCurrent(
+    /**
+     * Status code carried in the response body: "200" success, "204" no data.
+     * QWeather answers every request with HTTP 200, so errors (401/402/403/429/5xx) are only
+     * detectable through this field.
+     */
+    val code: String? = null,
     val condition: QWeatherCondition? = null,
     val temperature: QWeatherValueUnit? = null,
     val feelsLike: QWeatherValueUnit? = null,

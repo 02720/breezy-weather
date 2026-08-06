@@ -6,6 +6,7 @@ adaptiveiconview = "0.0.3"
 agp = "9.3.1"
 appcompat = "1.7.1"
 annotationJvm = "1.10.0"
+bouncycastle = "1.80"
 breezy-datasharing-lib = "09c0e4dd062601239c3f6062266d4b963577cefc"
 cardview = "1.0.0"
 compose-bom = "2026.06.01"
@@ -61,6 +62,7 @@ adaptiveiconview = { group = "com.github.breezy-weather", name = "AdaptiveIconVi
 android-gradle = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
 annotation-jvm = { group = "androidx.annotation", name = "annotation-jvm", version.ref = "annotationJvm" }
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+bcprov = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncycastle" }
 breezy-datasharing-lib = { group = "com.github.breezy-weather", name = "breezy-weather-data-sharing-lib", version.ref = "breezy-datasharing-lib" }
 cardview = { group = "androidx.cardview", name = "cardview", version.ref = "cardview" }
 compose-animation = { group = "androidx.compose.animation", name = "animation" }

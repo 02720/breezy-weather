@@ -311,7 +311,7 @@ In general, a weather source can be considered for inclusion in the official rel
 | NCEI               | ✅ included from v6.0.5-alpha                                                               |              |
 | NLSC               | ✅ included from v6.0.5-alpha                                                               |              |
 | Pirate Weather     | ✅ included from v5.0.0                                                                     |              |
-| QWeather           | ✅ included from v6.2.2                                                                     | 2026-08-06   |
+| 和风天气           | ✅ included from v6.2.2                                                                     | 2026-08-06   |
 | Recosanté          | ✅ included from v5.1.1                                                                     |              |
 | Tianji Weather     | ✅ included in this fork                                                                    | 2026-08-04   |
 | WMO Severe Weather | ✅ included from v5.1.4                                                                     |              |

@@ -40,13 +40,18 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import io.reactivex.rxjava3.core.Observable
 import org.breezyweather.BuildConfig
 import org.breezyweather.R
+import org.breezyweather.common.exceptions.ApiLimitReachedException
+import org.breezyweather.common.exceptions.ApiUnauthorizedException
+import org.breezyweather.common.exceptions.WeatherException
 import org.breezyweather.common.extensions.code
 import org.breezyweather.common.extensions.currentLocale
 import org.breezyweather.common.extensions.isTraditionalChinese
 import org.breezyweather.common.extensions.toDateNoHour
 import org.breezyweather.common.preference.EditTextPreference
+import org.breezyweather.common.preference.ListPreference
 import org.breezyweather.common.preference.Preference
 import org.breezyweather.domain.settings.SourceConfigStore
+import org.breezyweather.sources.common.getCleanChineseAlertTitle
 import org.breezyweather.sources.qweather.json.QWeatherAirCurrentResult
 import org.breezyweather.sources.qweather.json.QWeatherAirHourlyResult
 import org.breezyweather.sources.qweather.json.QWeatherAlertColor
@@ -80,10 +85,15 @@ import javax.inject.Named
 /**
  * QWeather (和风天气) service.
  *
- * Authentication: API Key passed via the `X-QW-Api-Key` header. JWT (Ed25519) is the preferred
- * method recommended by QWeather, but EdDSA signing is not available on the project's minSdk 23
- * without pulling in BouncyCastle; the API Key method is supported by every endpoint used here
- * and works on all Android versions. Each user provides their own key and personal API Host.
+ * Authentication supports both methods offered by QWeather, selectable in the source settings:
+ * - API Key passed via the `X-QW-Api-Key` header.
+ * - JWT (Ed25519) passed via the `Authorization: Bearer` header. QWeather recommends JWT:
+ *   API Key requests are limited to 1000/day from 2027-02-01
+ *   (https://blog.qweather.com/announce/request-volume-limit-for-api-key/), while JWT is
+ *   unlimited. The token is signed locally with the user's Ed25519 private key using
+ *   BouncyCastle, so it works on all API levels from the project's minSdk 23.
+ *
+ * Each user provides their own credentials and personal API Host.
  */
 class QWeatherService @Inject constructor(
     @ApplicationContext context: Context,
@@ -106,12 +116,29 @@ class QWeatherService @Inject constructor(
             .create(QWeatherApi::class.java)
     }
 
+    /**
+     * QWeather always answers with HTTP 200 and reports failures through the `code` field of
+     * the response body (https://dev.qweather.com/docs/resource/status-code/). Without this
+     * check, an invalid key/token (401/403) or an exhausted quota (402/429) would silently
+     * look like missing data. Codes meaning "no data" (200, 204) are left untouched; every
+     * other code is surfaced as a per-feature failure.
+     */
+    private fun throwOnErrorCode(code: String?) {
+        when (code) {
+            null, "200", "204" -> { /* success, or no data for this location */ }
+            "401", "403" -> throw ApiUnauthorizedException()
+            "402", "429" -> throw ApiLimitReachedException()
+            else -> throw WeatherException()
+        }
+    }
+
     override fun requestWeather(
         context: Context,
         location: Location,
         requestedFeatures: List<SourceFeature>,
     ): Observable<WeatherWrapper> {
-        val apiKey = getApiKeyOrDefault()
+        // Exactly one of the two is non-null; Retrofit omits null-valued headers.
+        val (apiKey, authorization) = getAuthHeaders()
         val languageCode = getLanguage(context)
         // QWeather accepts at most 2 decimals for coordinates.
         val lat = roundCoord(location.latitude)
@@ -122,64 +149,78 @@ class QWeatherService @Inject constructor(
         val failedFeatures = mutableMapOf<SourceFeature, Throwable>()
 
         val current = if (SourceFeature.CURRENT in requestedFeatures) {
-            api.getCurrent(apiKey, lat, lon, languageCode).onErrorResumeNext {
-                failedFeatures[SourceFeature.CURRENT] = it
-                Observable.just(QWeatherCurrent())
-            }
+            api.getCurrent(apiKey, authorization, lat, lon, languageCode)
+                .map { it.apply { throwOnErrorCode(code) } }
+                .onErrorResumeNext {
+                    failedFeatures[SourceFeature.CURRENT] = it
+                    Observable.just(QWeatherCurrent())
+                }
         } else {
             Observable.just(QWeatherCurrent())
         }
 
         val daily = if (SourceFeature.FORECAST in requestedFeatures) {
-            api.getDaily(apiKey, lat, lon, DAILY_DAYS, languageCode).onErrorResumeNext {
-                failedFeatures[SourceFeature.FORECAST] = it
-                Observable.just(QWeatherDailyResult())
-            }
+            api.getDaily(apiKey, authorization, lat, lon, DAILY_DAYS, languageCode)
+                .map { it.apply { throwOnErrorCode(code) } }
+                .onErrorResumeNext {
+                    failedFeatures[SourceFeature.FORECAST] = it
+                    Observable.just(QWeatherDailyResult())
+                }
         } else {
             Observable.just(QWeatherDailyResult())
         }
 
         val hourly = if (SourceFeature.FORECAST in requestedFeatures) {
-            api.getHourly(apiKey, lat, lon, HOURLY_HOURS, languageCode).onErrorResumeNext {
-                failedFeatures[SourceFeature.FORECAST] = it
-                Observable.just(QWeatherHourlyResult())
-            }
+            api.getHourly(apiKey, authorization, lat, lon, HOURLY_HOURS, languageCode)
+                .map { it.apply { throwOnErrorCode(code) } }
+                .onErrorResumeNext {
+                    failedFeatures[SourceFeature.FORECAST] = it
+                    Observable.just(QWeatherHourlyResult())
+                }
         } else {
             Observable.just(QWeatherHourlyResult())
         }
 
         val minutely = if (SourceFeature.MINUTELY in requestedFeatures) {
-            api.getMinutely(apiKey, minutelyLocation, languageCode).onErrorResumeNext {
-                failedFeatures[SourceFeature.MINUTELY] = it
-                Observable.just(QWeatherMinutelyResult())
-            }
+            api.getMinutely(apiKey, authorization, minutelyLocation, languageCode)
+                .map { it.apply { throwOnErrorCode(code) } }
+                .onErrorResumeNext {
+                    failedFeatures[SourceFeature.MINUTELY] = it
+                    Observable.just(QWeatherMinutelyResult())
+                }
         } else {
             Observable.just(QWeatherMinutelyResult())
         }
 
         val alert = if (SourceFeature.ALERT in requestedFeatures) {
-            api.getAlert(apiKey, lat, lon, languageCode).onErrorResumeNext {
-                failedFeatures[SourceFeature.ALERT] = it
-                Observable.just(QWeatherAlertResult())
-            }
+            api.getAlert(apiKey, authorization, lat, lon, languageCode)
+                .map { it.apply { throwOnErrorCode(code) } }
+                .onErrorResumeNext {
+                    failedFeatures[SourceFeature.ALERT] = it
+                    Observable.just(QWeatherAlertResult())
+                }
         } else {
             Observable.just(QWeatherAlertResult())
         }
 
         val airCurrent = if (SourceFeature.AIR_QUALITY in requestedFeatures) {
-            api.getAirCurrent(apiKey, lat, lon, languageCode).onErrorResumeNext {
-                failedFeatures[SourceFeature.AIR_QUALITY] = it
-                Observable.just(QWeatherAirCurrentResult())
-            }
+            api.getAirCurrent(apiKey, authorization, lat, lon, languageCode)
+                .map { it.apply { throwOnErrorCode(code) } }
+                .onErrorResumeNext {
+                    failedFeatures[SourceFeature.AIR_QUALITY] = it
+                    Observable.just(QWeatherAirCurrentResult())
+                }
         } else {
             Observable.just(QWeatherAirCurrentResult())
         }
 
         val airHourly = if (SourceFeature.AIR_QUALITY in requestedFeatures) {
-            api.getAirHourly(apiKey, lat, lon, languageCode).onErrorResumeNext {
-                failedFeatures[SourceFeature.AIR_QUALITY] = it
-                Observable.just(QWeatherAirHourlyResult())
-            }
+            api.getAirHourly(apiKey, authorization, lat, lon, languageCode)
+                .map { it.apply { throwOnErrorCode(code) } }
+                .onErrorResumeNext {
+                    failedFeatures[SourceFeature.AIR_QUALITY] = it
+                    Observable.just(QWeatherAirHourlyResult())
+                }
         } else {
             Observable.just(QWeatherAirHourlyResult())
         }
@@ -352,11 +393,12 @@ class QWeatherService @Inject constructor(
         return alerts.map { alert ->
             val severity = getAlertSeverity(alert.severity)
             Alert(
+                // Hash the raw headline (not the cleaned one) to keep fallback IDs unique.
                 alertId = alert.id
                     ?: Objects.hash(alert.headline, alert.issuedTime, alert.severity).toString(),
                 startDate = alert.effectiveTime?.toQWeatherDate() ?: alert.issuedTime?.toQWeatherDate(),
                 endDate = alert.expireTime?.toQWeatherDate(),
-                headline = alert.headline,
+                headline = getAlertHeadline(alert),
                 description = alert.description,
                 instruction = alert.instruction,
                 source = alert.senderName,
@@ -364,6 +406,18 @@ class QWeatherService @Inject constructor(
                 color = getAlertColor(alert.color, severity)
             )
         }
+    }
+
+    /**
+     * QWeather headlines follow the China Meteorological Administration format
+     * "平南县气象台发布雷电黄色预警信号", which is redundant. Reduce them to their core
+     * "{type}{level}预警" form, e.g. "雷电黄色预警"; the issuing station remains available
+     * in the alert's source field. Non-Chinese headlines are returned unchanged.
+     */
+    private fun getAlertHeadline(alert: QWeatherAlert): String? {
+        val cleaned = getCleanChineseAlertTitle(alert.headline)
+        if (cleaned != null) return cleaned
+        return alert.headline?.ifEmpty { null }
     }
 
     private fun getAlertColor(color: QWeatherAlertColor?, severity: AlertSeverity): Int {
@@ -527,6 +581,30 @@ class QWeatherService @Inject constructor(
         }
         get() = config.getString("apikey", null) ?: ""
 
+    private var authMethod: String
+        set(value) {
+            config.edit().putString("auth_method", value).apply()
+        }
+        get() = config.getString("auth_method", null) ?: AUTH_METHOD_API_KEY
+
+    private var projectId: String
+        set(value) {
+            config.edit().putString("project_id", value).apply()
+        }
+        get() = config.getString("project_id", null) ?: ""
+
+    private var credentialId: String
+        set(value) {
+            config.edit().putString("credential_id", value).apply()
+        }
+        get() = config.getString("credential_id", null) ?: ""
+
+    private var jwtPrivateKey: String
+        set(value) {
+            config.edit().putString("jwt_private_key", value).apply()
+        }
+        get() = config.getString("jwt_private_key", null) ?: ""
+
     private var host: String
         set(value) {
             config.edit().putString("host", value).apply()
@@ -541,14 +619,51 @@ class QWeatherService @Inject constructor(
         return host.ifEmpty { BuildConfig.QWEATHER_HOST }
     }
 
+    /**
+     * Returns the authentication values for the selected method as a pair of
+     * (API key, "Bearer <JWT>"); exactly one of the two is non-null.
+     *
+     * @throws IllegalArgumentException when JWT authentication is selected but the configured
+     *     private key cannot be parsed or signed
+     */
+    private fun getAuthHeaders(): Pair<String?, String?> {
+        return if (authMethod == AUTH_METHOD_JWT) {
+            val token = createQWeatherJwtToken(
+                privateKey = jwtPrivateKey,
+                projectId = projectId,
+                credentialId = credentialId
+            )
+            null to "Bearer $token"
+        } else {
+            getApiKeyOrDefault() to null
+        }
+    }
+
     override val isConfigured
-        get() = getApiKeyOrDefault().isNotEmpty() && getHostOrDefault().isNotEmpty()
+        get() = getHostOrDefault().isNotEmpty() && if (authMethod == AUTH_METHOD_JWT) {
+            projectId.isNotEmpty() && credentialId.isNotEmpty() && jwtPrivateKey.isNotEmpty()
+        } else {
+            getApiKeyOrDefault().isNotEmpty()
+        }
 
     override val isRestricted
-        get() = apikey.isEmpty() || host.isEmpty()
+        get() = host.isEmpty() || if (authMethod == AUTH_METHOD_JWT) {
+            projectId.isEmpty() || credentialId.isEmpty() || jwtPrivateKey.isEmpty()
+        } else {
+            apikey.isEmpty()
+        }
 
     override fun getPreferences(context: Context): List<Preference> {
         return listOf(
+            ListPreference(
+                titleId = R.string.settings_weather_source_qweather_auth_method,
+                selectedKey = authMethod,
+                valueArrayId = R.array.qweather_preference_auth_method_values,
+                nameArrayId = R.array.qweather_preference_auth_method,
+                onValueChanged = {
+                    authMethod = it
+                }
+            ),
             EditTextPreference(
                 titleId = R.string.settings_weather_source_qweather_api_key,
                 summary = { c, content ->
@@ -559,6 +674,40 @@ class QWeatherService @Inject constructor(
                 content = apikey,
                 onValueChanged = {
                     apikey = it
+                }
+            ),
+            EditTextPreference(
+                titleId = R.string.settings_weather_source_qweather_jwt_project_id,
+                summary = { c, content ->
+                    content.ifEmpty {
+                        c.getString(R.string.settings_weather_source_qweather_jwt_project_id_summary)
+                    }
+                },
+                content = projectId,
+                onValueChanged = {
+                    projectId = it
+                }
+            ),
+            EditTextPreference(
+                titleId = R.string.settings_weather_source_qweather_jwt_credential_id,
+                summary = { c, content ->
+                    content.ifEmpty {
+                        c.getString(R.string.settings_weather_source_qweather_jwt_credential_id_summary)
+                    }
+                },
+                content = credentialId,
+                onValueChanged = {
+                    credentialId = it
+                }
+            ),
+            EditTextPreference(
+                titleId = R.string.settings_weather_source_qweather_jwt_private_key,
+                summary = { c, _ ->
+                    c.getString(R.string.settings_weather_source_qweather_jwt_private_key_summary)
+                },
+                content = jwtPrivateKey,
+                onValueChanged = {
+                    jwtPrivateKey = it
                 }
             ),
             EditTextPreference(
@@ -577,6 +726,9 @@ class QWeatherService @Inject constructor(
     }
 
     companion object {
+        private const val AUTH_METHOD_API_KEY = "api_key"
+        private const val AUTH_METHOD_JWT = "jwt"
+
         private const val DAILY_DAYS = 10
         private const val HOURLY_HOURS = 240
         private const val MINUTELY_INTERVAL_MINUTES = 5

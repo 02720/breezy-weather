@@ -539,6 +539,9 @@ dependencies {
         exclude("org.json", "json") // provided by Android natively
     }
 
+    // Ed25519 signing for QWeather JWT authentication (basic flavor only)
+    "basicImplementation"(libs.bcprov)
+
     // rx java.
     implementation(libs.rxjava)
     implementation(libs.rxandroid)

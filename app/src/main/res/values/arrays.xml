@@ -246,6 +246,16 @@
         <item>enterprise</item>
     </string-array>
 
+    <!-- QWeather preferences -->
+    <string-array name="qweather_preference_auth_method">
+        <item>@string/weather_source_qweather_preference_auth_api_key</item>
+        <item>@string/weather_source_qweather_preference_auth_jwt</item>
+    </string-array>
+    <string-array name="qweather_preference_auth_method_values">
+        <item>api_key</item>
+        <item>jwt</item>
+    </string-array>
+
     <string-array name="accu_preference_days">
         <item>@string/weather_source_accu_preference_days_1</item>
         <item>@string/weather_source_accu_preference_days_5</item>

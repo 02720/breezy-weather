@@ -763,6 +763,15 @@
     <string name="settings_weather_source_ssms_instance" translatable="false">@string/settings_source_instance</string>
     <string name="settings_weather_source_qweather_host">API host</string>
     <string name="settings_weather_source_qweather_host_summary">Your personal API host, e.g. devapi.qweather.com</string>
+    <string name="settings_weather_source_qweather_auth_method">Authentication method</string>
+    <string name="settings_weather_source_qweather_jwt_project_id">JWT project ID</string>
+    <string name="settings_weather_source_qweather_jwt_project_id_summary">Your QWeather project ID (the sub claim of the token)</string>
+    <string name="settings_weather_source_qweather_jwt_credential_id">JWT credential ID</string>
+    <string name="settings_weather_source_qweather_jwt_credential_id_summary">Your QWeather credential ID (the kid claim of the token)</string>
+    <string name="settings_weather_source_qweather_jwt_private_key">JWT private key (Ed25519)</string>
+    <string name="settings_weather_source_qweather_jwt_private_key_summary">Your Ed25519 private key in PEM format, used to sign requests</string>
+    <string name="weather_source_qweather_preference_auth_api_key">API Key</string>
+    <string name="weather_source_qweather_preference_auth_jwt">JWT</string>
     <!-- Synonym of instance: Server -->
     <string name="settings_weather_source_open_meteo_instance_forecast">Forecast instance</string>
     <!-- Synonym of instance: Server -->

@@ -18,7 +18,7 @@ Below, you can find details about the support and implementation status for feat
 | 🌐 Worldwide                       | [Nominatim](#nominatim)                                                                           | Address                                                                              |
 | 🌐 Worldwide                       | [OpenWeather](#openweather) 🔓                                                                    | Forecast, Current, Air quality                                                       |
 | 🌐 Worldwide                       | [Pirate Weather](#pirate-weather) 🔐                                                              | Forecast, Current, Nowcasting, Alerts                                                |
-| 🌐 Worldwide                       | [QWeather](#qweather) 🔐                                                                          | Forecast, Current, Air quality, Nowcasting, Alerts                                   |
+| 🌐 Worldwide                       | [和风天气](#和风天气) 🔐                                                                          | Forecast, Current, Air quality, Nowcasting, Alerts                                   |
 | 🌐 Worldwide                       | [Tianji Weather](#tianji-weather)                                                                 | Forecast                                                                           |
 | 🌐 Worldwide                       | [WMO Severe Weather](#wmo-severe-weather)                                                         | Alerts                                                                               |
 | 🇦🇽 Åland Islands                 | [FMI](#finnish-meteorological-institute)                                                          | Forecast, Current, Air quality, Alerts, Normals                                      |
@@ -247,10 +247,12 @@ Below, you can find details about the support and implementation status for feat
 | Pressure                  | ✅         | Ceiling           | ❌         |
 </details>
 
-### QWeather
-> 🔐 **This source requires an API key and a personal API host.** [Register here](https://dev.qweather.com/)
+### 和风天气
+> 🔐 **This source requires an API key (or JWT credentials) and a personal API host.** [Register here](https://dev.qweather.com/)
 
-**[QWeather](https://www.qweather.com/)** (和风天气) is a commercial weather data provider based in China. It offers worldwide multi-model blended forecasts, air quality, officially issued weather alerts, and minutely precipitation nowcasting for China.
+**和风天气 ([QWeather](https://www.qweather.com/))** is a commercial weather data provider based in China. It offers worldwide multi-model blended forecasts, air quality, officially issued weather alerts, and minutely precipitation nowcasting for China.
+
+Authentication can use either an API Key (`X-QW-Api-Key` header) or JWT (`Authorization: Bearer` header, Ed25519-signed). JWT is recommended: from 2027-02-01 QWeather limits API Key requests to 1000/day, while JWT has no limit. See [QWeather authentication docs](https://dev.qweather.com/docs/configuration/authentication/).
 
 | Feature                        | Detail                                                              |
 |--------------------------------|---------------------------------------------------------------------|
@@ -265,7 +267,7 @@ Below, you can find details about the support and implementation status for feat
 | 📊 **Normals**                 | Not available                                                       |
 | 🧭 **Address lookup**          | Not available                                                       |
 
-<details><summary><h4>Details of available data from QWeather</h4></summary>
+<details><summary><h4>Details of available data from 和风天气</h4></summary>
 
 | Data                      | Available | Data              | Available |
 |---------------------------|-----------|-------------------|-----------|
