@@ -717,6 +717,7 @@
     <string name="settings_location_source_baidu_ip_api_key" translatable="false">@string/settings_source_api_key</string>
     <string name="settings_weather_source_accu_api_key" translatable="false">@string/settings_source_api_key</string>
     <string name="settings_weather_source_caiyun_api_key" translatable="false">@string/settings_source_token</string>
+    <string name="settings_weather_source_qweather_api_key" translatable="false">@string/settings_source_api_key</string>
     <string name="settings_weather_source_eccc_api_key" translatable="false">@string/settings_source_api_key</string>
     <string name="settings_weather_source_open_weather_api_key" translatable="false">@string/settings_source_api_key</string>
     <string name="settings_weather_source_pirate_weather_api_key" translatable="false">@string/settings_source_api_key</string>
@@ -760,6 +761,8 @@
     <string name="settings_weather_source_sma_sc_instance" translatable="false">@string/settings_source_instance</string>
     <string name="settings_weather_source_sma_su_instance" translatable="false">@string/settings_source_instance</string>
     <string name="settings_weather_source_ssms_instance" translatable="false">@string/settings_source_instance</string>
+    <string name="settings_weather_source_qweather_host">API host</string>
+    <string name="settings_weather_source_qweather_host_summary">Your personal API host, e.g. devapi.qweather.com</string>
     <!-- Synonym of instance: Server -->
     <string name="settings_weather_source_open_meteo_instance_forecast">Forecast instance</string>
     <!-- Synonym of instance: Server -->

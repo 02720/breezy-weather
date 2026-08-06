@@ -18,6 +18,7 @@ Below, you can find details about the support and implementation status for feat
 | 🌐 Worldwide                       | [Nominatim](#nominatim)                                                                           | Address                                                                              |
 | 🌐 Worldwide                       | [OpenWeather](#openweather) 🔓                                                                    | Forecast, Current, Air quality                                                       |
 | 🌐 Worldwide                       | [Pirate Weather](#pirate-weather) 🔐                                                              | Forecast, Current, Nowcasting, Alerts                                                |
+| 🌐 Worldwide                       | [QWeather](#qweather) 🔐                                                                          | Forecast, Current, Air quality, Nowcasting, Alerts                                   |
 | 🌐 Worldwide                       | [Tianji Weather](#tianji-weather)                                                                 | Forecast                                                                           |
 | 🌐 Worldwide                       | [WMO Severe Weather](#wmo-severe-weather)                                                         | Alerts                                                                               |
 | 🇦🇽 Åland Islands                 | [FMI](#finnish-meteorological-institute)                                                          | Forecast, Current, Air quality, Alerts, Normals                                      |
@@ -240,6 +241,37 @@ Below, you can find details about the support and implementation status for feat
 | Weather Condition         | ✅         | Humidity          | ✅         |
 | Temperature               | ✅         | Dew Point         | ✅         |
 | Precipitation             | ✅ (RSI)   | UV Index          | ✅         |
+| Precipitation Probability | ✅         | Sunshine Duration | ❌         |
+| Precipitation Duration    | ❌         | Cloud Cover       | ✅         |
+| Wind                      | ✅         | Visibility        | ✅         |
+| Pressure                  | ✅         | Ceiling           | ❌         |
+</details>
+
+### QWeather
+> 🔐 **This source requires an API key and a personal API host.** [Register here](https://dev.qweather.com/)
+
+**[QWeather](https://www.qweather.com/)** (和风天气) is a commercial weather data provider based in China. It offers worldwide multi-model blended forecasts, air quality, officially issued weather alerts, and minutely precipitation nowcasting for China.
+
+| Feature                        | Detail                                                              |
+|--------------------------------|---------------------------------------------------------------------|
+| 🗺️ **Coverage**               | 🌐 Worldwide (minutely precipitation is China-only)                 |
+| 📆 **Daily forecast**          | Up to 10 days                                                       |
+| ⏱️ **Hourly forecast**         | Up to 10 days                                                       |
+| ▶️ **Current observation**     | Available: can complement another source as a **Current Source**    |
+| 😶‍🌫️ **Air quality**         | Available                                                           |
+| 🤧 **Pollen**                  | Not available                                                       |
+| ☔ **Precipitation nowcasting** | Available (China only)                                              |
+| ⚠️ **Alerts**                  | Available                                                           |
+| 📊 **Normals**                 | Not available                                                       |
+| 🧭 **Address lookup**          | Not available                                                       |
+
+<details><summary><h4>Details of available data from QWeather</h4></summary>
+
+| Data                      | Available | Data              | Available |
+|---------------------------|-----------|-------------------|-----------|
+| Weather Condition         | ✅         | Humidity          | ✅         |
+| Temperature               | ✅         | Dew Point         | ✅         |
+| Precipitation             | ✅         | UV Index          | ✅         |
 | Precipitation Probability | ✅         | Sunshine Duration | ❌         |
 | Precipitation Duration    | ❌         | Cloud Cover       | ✅         |
 | Wind                      | ✅         | Visibility        | ✅         |

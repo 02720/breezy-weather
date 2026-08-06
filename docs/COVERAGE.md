@@ -311,6 +311,7 @@ In general, a weather source can be considered for inclusion in the official rel
 | NCEI               | ✅ included from v6.0.5-alpha                                                               |              |
 | NLSC               | ✅ included from v6.0.5-alpha                                                               |              |
 | Pirate Weather     | ✅ included from v5.0.0                                                                     |              |
+| QWeather           | ✅ included from v6.2.2                                                                     | 2026-08-06   |
 | Recosanté          | ✅ included from v5.1.1                                                                     |              |
 | Tianji Weather     | ✅ included in this fork                                                                    | 2026-08-04   |
 | WMO Severe Weather | ✅ included from v5.1.4                                                                     |              |
@@ -322,7 +323,6 @@ In general, a weather source can be considered for inclusion in the official rel
 | HERE               | ❌ [removed from v6.0.6](https://github.com/breezy-weather/breezy-weather/issues/1849)      | 2025-08-24   |
 | Microsoft Azure    | ❌ free tier requires credit card info                                                      |              |
 | Pollenrapporten    | ❌ [no geolocation](https://github.com/breezy-weather/breezy-weather/issues/758)            | 2024-03-08   |
-| QWeather           | ❌ [privacy concern](https://github.com/breezy-weather/breezy-weather/pull/574)             | 2024-04-11   |
 | Seniverse          | ❌ [no geolocation, no hourly](https://github.com/breezy-weather/breezy-weather/issues/508) | 2023-10-05   |
 | Tomorrow.io        | [open to contribution](https://github.com/breezy-weather/breezy-weather/issues/469)        | 2023-09-28   |
 | WeatherAPI         | [open to contribution](https://github.com/breezy-weather/breezy-weather/issues/453)        | 2023-09-08   |

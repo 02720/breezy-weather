@@ -342,6 +342,16 @@ configure<ApplicationExtension> {
             "CAIYUN_KEY",
             "\"${localProperties.getProperty("breezy.caiyun.key") ?: ""}\""
         )
+        it.buildConfigField(
+            "String",
+            "QWEATHER_KEY",
+            "\"${localProperties.getProperty("breezy.qweather.key") ?: ""}\""
+        )
+        it.buildConfigField(
+            "String",
+            "QWEATHER_HOST",
+            "\"${localProperties.getProperty("breezy.qweather.host") ?: ""}\""
+        )
     }
 
     flavorDimensions.add("default")
