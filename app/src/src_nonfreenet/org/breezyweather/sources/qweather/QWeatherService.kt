@@ -54,6 +54,7 @@ import org.breezyweather.domain.settings.SourceConfigStore
 import org.breezyweather.sources.common.getCleanChineseAlertTitle
 import org.breezyweather.sources.qweather.json.QWeatherAirCurrentResult
 import org.breezyweather.sources.qweather.json.QWeatherAirHourlyResult
+import org.breezyweather.sources.qweather.json.QWeatherAlert
 import org.breezyweather.sources.qweather.json.QWeatherAlertColor
 import org.breezyweather.sources.qweather.json.QWeatherAlertResult
 import org.breezyweather.sources.qweather.json.QWeatherCurrent
