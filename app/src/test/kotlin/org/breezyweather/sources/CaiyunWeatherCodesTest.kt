@@ -178,5 +178,18 @@ class CaiyunWeatherCodesTest {
         getCleanChineseAlertTitle("北京市气象台发布大风蓝色预警") shouldBe "大风蓝色预警"
         getCleanChineseAlertTitle("大雾橙色预警（已解除）") shouldBe "大雾橙色预警"
         getCleanChineseAlertTitle("大风蓝色预警（已发布）") shouldBe "大风蓝色预警"
+        getCleanChineseAlertTitle("平南县气象台更新雷电黄色预警") shouldBe "雷电黄色预警"
+        getCleanChineseAlertTitle("XX县气象台继续发布高温橙色预警信号") shouldBe "高温橙色预警"
+        getCleanChineseAlertTitle("XX县气象台将暴雨蓝色预警升级为暴雨黄色预警") shouldBe
+            "暴雨黄色预警"
+        getCleanChineseAlertTitle("XX市气象台雷电黄色预警信号") shouldBe "雷电黄色预警"
+        getCleanChineseAlertTitle("雷电黄色预警解除") shouldBe "雷电黄色预警"
+        getCleanChineseAlertTitle("XX县人民政府防汛抗旱指挥部暴雨红色预警") shouldBe
+            "暴雨红色预警"
+        getCleanChineseAlertTitle("暴雨红色预警【I级/特别严重】") shouldBe "暴雨红色预警"
+        getCleanChineseAlertTitle("广东省气象台发布台风白色预警信号") shouldBe "台风白色预警"
+        getCleanChineseAlertTitle("XX气象台发布：暴雨红色预警信号") shouldBe "暴雨红色预警"
+        getCleanChineseAlertTitle("Weather Warning issued for Pingnan") shouldBe
+            "Weather Warning issued for Pingnan"
     }
 }

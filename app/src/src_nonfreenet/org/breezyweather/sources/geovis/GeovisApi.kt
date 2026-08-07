@@ -21,6 +21,7 @@ import org.breezyweather.sources.geovis.json.GeovisAlertResult
 import org.breezyweather.sources.geovis.json.GeovisAqiResult
 import org.breezyweather.sources.geovis.json.GeovisDailyResult
 import org.breezyweather.sources.geovis.json.GeovisHourlyResult
+import org.breezyweather.sources.geovis.json.GeovisMinutelyResult
 import org.breezyweather.sources.geovis.json.GeovisRealtimeResult
 import retrofit2.http.GET
 import retrofit2.http.Path
@@ -94,6 +95,17 @@ interface GeovisApi {
         @Query("location") location: String,
         @Query("token") token: String,
     ): Observable<GeovisAqiResult>
+
+    /**
+     * Minute-level rain nowcast ("Rain-Pulse", China only). The `result.series` holds the
+     * per-minute precipitation intensity in mm/h over the next 2 hours and is empty when no
+     * rain is forecast at the point (https://datacloud.geovisearth.com/support/meteorological/rainfallForcast).
+     */
+    @GET("nowcast/point/desc")
+    fun getMinutely(
+        @Query("location") location: String,
+        @Query("token") token: String,
+    ): Observable<GeovisMinutelyResult>
 
     /**
      * The alerts currently in effect for the requested point (China only; other regions return

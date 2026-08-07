@@ -28,7 +28,8 @@ import org.breezyweather.common.source.WeatherSource.Companion.PRIORITY_NONE
 /**
  * 中科星图 (Geovis Earth Data Cloud). A commercial meteorological data cloud providing
  * worldwide forecasts, with richer China-only products: air quality from monitoring
- * stations and official China Meteorological Administration weather alerts.
+ * stations, minute-level rain nowcast and official China Meteorological Administration
+ * weather alerts.
  *
  * The API uses GCJ-02 (Mars) coordinates and documents its coverage at
  * https://datacloud.geovisearth.com/support/meteorological/summary.
@@ -49,19 +50,21 @@ abstract class GeovisServiceStub() :
         SourceFeature.FORECAST to name,
         SourceFeature.CURRENT to name,
         SourceFeature.AIR_QUALITY to name,
+        SourceFeature.MINUTELY to name,
         SourceFeature.ALERT to name
     )
 
     /**
-     * Air quality and alerts are China-only products (served by the `cn/` endpoints), so they
-     * are gated to Chinese locations. Forecast and current conditions are available worldwide.
+     * Air quality, minute-level rain nowcast and alerts are China-only products (served by
+     * the `cn/` endpoints or the China-only nowcast), so they are gated to Chinese locations.
+     * Forecast and current conditions are available worldwide.
      */
     override fun isFeatureSupportedForLocation(
         location: Location,
         feature: SourceFeature,
     ): Boolean {
         return when (feature) {
-            SourceFeature.AIR_QUALITY, SourceFeature.ALERT ->
+            SourceFeature.AIR_QUALITY, SourceFeature.MINUTELY, SourceFeature.ALERT ->
                 location.countryCode.equals("CN", ignoreCase = true)
             else -> true
         }
