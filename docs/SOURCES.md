@@ -19,6 +19,7 @@ Below, you can find details about the support and implementation status for feat
 | 🌐 Worldwide                       | [OpenWeather](#openweather) 🔓                                                                    | Forecast, Current, Air quality                                                       |
 | 🌐 Worldwide                       | [Pirate Weather](#pirate-weather) 🔐                                                              | Forecast, Current, Nowcasting, Alerts                                                |
 | 🌐 Worldwide                       | [和风天气](#和风天气) 🔐                                                                          | Forecast, Current, Air quality, Nowcasting, Alerts                                   |
+| 🌐 Worldwide                       | [中科星图](#中科星图) 🔐                                                                          | Forecast, Current, Air quality (CN), Alerts (CN)                                    |
 | 🌐 Worldwide                       | [Tianji Weather](#tianji-weather)                                                                 | Forecast                                                                           |
 | 🌐 Worldwide                       | [WMO Severe Weather](#wmo-severe-weather)                                                         | Alerts                                                                               |
 | 🇦🇽 Åland Islands                 | [FMI](#finnish-meteorological-institute)                                                          | Forecast, Current, Air quality, Alerts, Normals                                      |
@@ -268,6 +269,39 @@ Authentication can use either an API Key (`X-QW-Api-Key` header) or JWT (`Author
 | 🧭 **Address lookup**          | Not available                                                       |
 
 <details><summary><h4>Details of available data from 和风天气</h4></summary>
+
+| Data                      | Available | Data              | Available |
+|---------------------------|-----------|-------------------|-----------|
+| Weather Condition         | ✅         | Humidity          | ✅         |
+| Temperature               | ✅         | Dew Point         | ✅         |
+| Precipitation             | ✅         | UV Index          | ✅         |
+| Precipitation Probability | ✅         | Sunshine Duration | ❌         |
+| Precipitation Duration    | ❌         | Cloud Cover       | ✅         |
+| Wind                      | ✅         | Visibility        | ✅         |
+| Pressure                  | ✅         | Ceiling           | ❌         |
+</details>
+
+### 中科星图
+> 🔐 **This source requires a token.** [Register here](https://datacloud.geovisearth.com/)
+
+**[中科星图 (Geovis Earth Data Cloud)](https://datacloud.geovisearth.com/)** is a commercial meteorological data cloud operated by Geovis Earth (星图云开放平台), a Chinese company. It offers worldwide forecasts, and China-only air quality from monitoring stations and official China Meteorological Administration weather alerts.
+
+Authentication uses a personal token passed as a query parameter. The API serves GCJ-02 ("Mars") coordinates, which Breezy Weather converts from the standard WGS-84 coordinates it stores. Note: in August 2026, the China (`cn/`) products were observed to serve data even for invalid tokens, while the global (`global/`) products do validate the token and require one authorized for global coverage.
+
+| Feature                        | Detail                                                              |
+|--------------------------------|---------------------------------------------------------------------|
+| 🗺️ **Coverage**               | 🌐 Worldwide (air quality and alerts are China-only)                 |
+| 📆 **Daily forecast**          | Up to 15 days                                                       |
+| ⏱️ **Hourly forecast**         | Up to 5 days in China, 3.4 days elsewhere                           |
+| ▶️ **Current observation**     | Available: can complement another source as a **Current Source**    |
+| 😶‍🌫️ **Air quality**         | Available (China only)                                              |
+| 🤧 **Pollen**                  | Not available                                                       |
+| ☔ **Precipitation nowcasting** | Not available                                                       |
+| ⚠️ **Alerts**                  | Available (China only)                                              |
+| 📊 **Normals**                 | Not available                                                       |
+| 🧭 **Address lookup**          | Not available                                                       |
+
+<details><summary><h4>Details of available data from 中科星图</h4></summary>
 
 | Data                      | Available | Data              | Available |
 |---------------------------|-----------|-------------------|-----------|

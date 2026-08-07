@@ -14,6 +14,7 @@
 - NCEI - Fix parsing error
 - Add Caiyun (China) source: forecast, current observation, air quality, precipitation nowcasting and alerts. A free token is required (registration asks for a phone number).
 - Add QWeather source: worldwide forecast, current observation, air quality, precipitation nowcasting (China only) and alerts. A personal API key and API host are required.
+- Add 中科星图 (Geovis Earth) source: worldwide forecast, current observation, air quality (China only) and alerts (China only). A token is required.
 
 **Technical**
 - [Breezy Update Notifier] Fix broadcast when the location list is changed from the app

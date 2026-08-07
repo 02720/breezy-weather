@@ -87,6 +87,7 @@ import org.breezyweather.sources.fpas.FpasService
 import org.breezyweather.sources.gadgetbridge.GadgetbridgeService
 import org.breezyweather.sources.geonames.GeoNamesService
 import org.breezyweather.sources.geosphereat.GeoSphereAtService
+import org.breezyweather.sources.geovis.GeovisService
 import org.breezyweather.sources.hko.HkoService
 import org.breezyweather.sources.ilmateenistus.IlmateenistusService
 import org.breezyweather.sources.imd.ImdService
@@ -163,6 +164,7 @@ class SourceManager @Inject constructor(
     gadgetbridgeService: GadgetbridgeService,
     geoNamesService: GeoNamesService,
     geoSphereAtService: GeoSphereAtService,
+    geovisService: GeovisService,
     gMetService: GMetService,
     hkoService: HkoService,
     igebuService: IgebuService,
@@ -237,6 +239,7 @@ class SourceManager @Inject constructor(
         openMeteoService,
         accuService,
         fpasService,
+        geovisService,
         infoplazaService,
         metNoService,
         nceiService,

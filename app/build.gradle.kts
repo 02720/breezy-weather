@@ -349,6 +349,11 @@ configure<ApplicationExtension> {
         )
         it.buildConfigField(
             "String",
+            "GEOVIS_KEY",
+            "\"${localProperties.getProperty("breezy.geovis.key") ?: ""}\""
+        )
+        it.buildConfigField(
+            "String",
             "QWEATHER_HOST",
             "\"${localProperties.getProperty("breezy.qweather.host") ?: ""}\""
         )
