@@ -4,12 +4,20 @@
 - [Changelog for v4.x](docs/CHANGELOG_4.x.md)
 
 
-# Version 6.2.2 (unreleased)
+# Version 6.2.3 (not yet released)
+
+**Improvements and fixes
+- Main screen settings - You can now reset blocks, daily trends, hourly trends to default order
+
+
+# Version 6.2.2 (2026-08-23)
 
 **Improvements and fixes**
 - Main screen - Add precipitation probability to hourly feels like tab
+- Main screen - Make the sun dark instead of bright when the user explicitly asked for dark mode
 
 **Sources**
+- BMKG - Fix refresh errors
 - Met Office (UK) - Fix shifted day sequence in locations with a different timezone than UTC
 - NCEI - Fix parsing error
 - Add Caiyun (China) source: forecast, current observation, air quality, precipitation nowcasting and alerts. A free token is required (registration asks for a phone number).
@@ -21,6 +29,13 @@
 
 **Technical**
 - [Breezy Update Notifier] Fix broadcast when the location list is changed from the app
+
+**Translations**
+- Initial translation for Creoles and pidgins (English based) (En Oh)
+- Initial translation for Hawaiian (En Oh)
+- Initial translation for Kannada (Vinay)
+- Initial translation for Urdu (haseebwt)
+- Translations updated
 
 
 # Version 6.2.1 (2026-06-07)
@@ -39,6 +54,9 @@
 - KNMI - Fix duplicate “Today” when migrating from another source
 - KNMI - Fix precipitation probability being 100 times too low
 - Recosanté - Removed source will no longer be available for choice in the source selection screens
+
+**Translations**
+- Translations updated
 
 
 # Version 6.2.0 (2026-05-01)
