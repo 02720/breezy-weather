@@ -29,6 +29,7 @@ data class CmaAlertResult(
 data class CmaAlert(
     val identifier: String? = null,
     val severity: String? = null,
+    val eventTypeCN: String? = null,
     val effective: String? = null,
     val expires: String? = null,
     val headline: String? = null,
