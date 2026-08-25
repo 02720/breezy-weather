@@ -145,7 +145,9 @@ GET /dataGis/api/internetWarn/getEffectiveAlert?areaCode=100000&eventCode=10000&
 - 参数键：`"stationId"`（字符串，可为空）
 - `needsLocationParametersRefresh`：参数缺失或 `coordinatesChanged` 时 true
 - `requestLocationParameters`：调 §2.1（dist 用 100km），解析 `DS.stationId` 存入 map；
-  无站点（境外/超距/500）→ 抛出异常（由调用方记录 failedFeatures），map 不写入 stationId
+  无站点（境外/超距/500）→ 返回空 map 而非抛异常（对抗式审查结论：
+  RefreshHelper 会把参数刷新异常放大为该源全部 feature 失败，而预警与格点兜底
+  并不依赖站点；代价是无站点的位置每次刷新会重试一次站点查找）
 
 ### 3.4 requestWeather 流程
 
@@ -197,6 +199,12 @@ requestedFeatures 过滤后为空 → 直接返回空 WeatherWrapper
 
 注：`CurrentWrapper` 无 precipitation 字段，V13019（实况降水）与格点 PRE_1H 无法通过
 CURRENT 输出，不映射（规格 §7 非目标原则：不造字段）。
+
+缺测哨兵清洗（对抗式审查补充）：源站把 ≥9999 的值视为缺测（网页 JS 以 `>9999` 判定），
+且实测出现 `WEP_Past_12h: 999999`、`V20003T: ""`。所有数值字段按要素物理界限过滤
+（温度 ±100、湿度/云量 0–100、气压 300–1200 hPa——实测高原站仅 680 hPa、风速 0–200 m/s、
+能见度 0–100 km——实测合法值达 30000 m、WEP 码 −1–99），越界即视为 null；
+蒲福风级 >17 视为缺测。
 | D_datetime | （不单独使用；CurrentWrapper 无观测时间字段） |
 
 格点兜底映射：TEM/RHU/WINS/WIND/WEA/VIS/TCDC 对应同名字段；WEA 数值码用 §3.5 映射。

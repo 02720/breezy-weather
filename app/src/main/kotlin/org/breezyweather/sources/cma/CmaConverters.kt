@@ -62,6 +62,15 @@ internal fun getCmaWeatherCodeFromText(text: String?): WeatherCode? {
     }
 }
 
+/**
+ * Drops CMA missing-data sentinels (the website treats values >= 9999 as missing)
+ * and any other magnitude outside the given physical bounds
+ */
+internal fun Double?.cmaSanitized(
+    min: Double,
+    max: Double,
+): Double? = this?.takeIf { it.isFinite() && it in min..max }
+
 private fun directionDegrees(direction: Char): Double? = when (direction) {
     '东' -> 90.0
     '南' -> 180.0
@@ -101,20 +110,23 @@ internal fun getCmaWindDirectionDegree(text: String?): Double? {
 }
 
 /**
- * Beaufort scale midpoints in m/s for levels 0..12
+ * Beaufort scale midpoints in m/s for levels 0..17 (13+ is the extended scale
+ * used over the oceans)
  */
 private val BEAUFORT_MIDPOINTS = doubleArrayOf(
-    0.0, 0.9, 2.45, 4.45, 6.7, 9.35, 12.3, 15.5, 18.95, 22.6, 26.45, 30.55, 34.0
+    0.0, 0.9, 2.45, 4.45, 6.7, 9.35, 12.3, 15.5, 18.95, 22.6, 26.45, 30.55,
+    34.0, 36.9, 41.4, 46.1, 50.9, 55.6
 )
 
 /**
  * Extracts the trailing Beaufort level from texts like "北偏东1级" and converts it
- * to a speed in m/s
+ * to a speed in m/s. Levels above 17 (extended Beaufort scale) are treated as
+ * missing data.
  */
 internal fun getCmaWindSpeed(text: String?): Double? {
     val level = text?.takeLastWhile { it.isDigit() }?.takeIf { it.isNotEmpty() }
         ?.toIntOrNull() ?: return null
-    return BEAUFORT_MIDPOINTS[level.coerceIn(0, BEAUFORT_MIDPOINTS.lastIndex)]
+    return BEAUFORT_MIDPOINTS.getOrNull(level)
 }
 
 internal fun getCmaDistanceKm(

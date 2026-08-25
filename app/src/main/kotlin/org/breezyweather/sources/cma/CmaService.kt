@@ -166,11 +166,13 @@ class CmaService @Inject constructor(
             latitude = location.latitude,
             dist = NEAR_STATION_SEARCH_DISTANCE_KM
         ).map { result ->
-            val stationId = result.data
+            // No station nearby must not fail the whole refresh: alerts and the
+            // gridded current fallback work without a station
+            result.data
                 ?.takeIf { it.returnCode == 0 && it.dataMethod == "station" }
                 ?.DS?.stationId?.takeIf { it.isNotBlank() }
-                ?: throw InvalidLocationException()
-            mapOf("stationId" to stationId)
+                ?.let { mapOf("stationId" to it) }
+                ?: emptyMap()
         }
     }
 
@@ -236,11 +238,7 @@ class CmaService @Inject constructor(
                 Observable.just(CmaAlertFetchResult(null, null))
             }
 
-        return Observable.zip(latestObservable, gridObservable, alertObservable) {
-                latest,
-                grid,
-                alerts,
-            ->
+        return Observable.zip(latestObservable, gridObservable, alertObservable) { latest, grid, alerts ->
             var dailyForecast: List<DailyWrapper>? = null
             var current: CurrentWrapper? = null
             var alertList: List<Alert>? = null
@@ -281,6 +279,40 @@ class CmaService @Inject constructor(
                 alertList = alertList,
                 failedFeatures = failedFeatures
             )
+        }.flatMap { wrapper ->
+            // The gridded endpoint was only queried upfront when no station was
+            // known: retry it once as a fallback when the station request failed
+            val shouldFallbackToGrid = SourceFeature.CURRENT in features &&
+                !stationId.isNullOrEmpty() &&
+                wrapper.current == null &&
+                wrapper.failedFeatures?.containsKey(SourceFeature.CURRENT) == true
+            if (!shouldFallbackToGrid) {
+                Observable.just(wrapper)
+            } else {
+                mApi.getGridLiveData(location.latitude, location.longitude)
+                    .map { result ->
+                        if (result.returnCode == "0" && !result.list.isNullOrEmpty()) {
+                            getCurrent(result.list)
+                        } else {
+                            null
+                        }
+                    }
+                    .map { gridCurrent ->
+                        if (gridCurrent == null) {
+                            wrapper
+                        } else {
+                            WeatherWrapper(
+                                dailyForecast = wrapper.dailyForecast,
+                                current = gridCurrent,
+                                alertList = wrapper.alertList,
+                                failedFeatures = wrapper.failedFeatures
+                                    ?.toMutableMap()
+                                    ?.apply { remove(SourceFeature.CURRENT) }
+                            )
+                        }
+                    }
+                    .onErrorResumeNext { Observable.just(wrapper) }
+            }
         }
     }
 
@@ -320,7 +352,10 @@ class CmaService @Inject constructor(
             weatherText = item.weatherText,
             weatherCode = getCmaWeatherCode(item.weatherCode),
             temperature = TemperatureWrapper(
-                temperature = item.temperature?.toDoubleOrNull()?.celsius
+                temperature = item.temperature
+                    ?.toDoubleOrNull()
+                    ?.cmaSanitized(-100.0, 100.0)
+                    ?.celsius
             ),
             wind = Wind(
                 degree = getCmaWindDirectionDegree(item.wind),
@@ -331,39 +366,44 @@ class CmaService @Inject constructor(
 
     private fun getCurrent(content: CmaStationContent): CurrentWrapper {
         return CurrentWrapper(
-            weatherText = content.weatherText,
+            weatherText = content.weatherText?.takeIf { it.isNotBlank() },
             weatherCode = getCmaWeatherCodeFromText(content.weatherText),
-            temperature = TemperatureWrapper(temperature = content.temperature?.celsius),
+            temperature = TemperatureWrapper(
+                temperature = content.temperature.cmaSanitized(-100.0, 100.0)?.celsius
+            ),
             wind = Wind(
                 degree = getCmaWindDirectionDegree(content.windDirectionText),
-                speed = content.windSpeed?.metersPerSecond
+                speed = content.windSpeed.cmaSanitized(0.0, 200.0)?.metersPerSecond
             ),
-            relativeHumidity = content.humidity?.percent,
-            pressure = content.pressure?.hectopascals,
-            visibility = content.visibility?.meters
+            relativeHumidity = content.humidity.cmaSanitized(0.0, 100.0)?.percent,
+            pressure = content.pressure.cmaSanitized(300.0, 1200.0)?.hectopascals,
+            visibility = content.visibility.cmaSanitized(0.0, 100_000.0)?.meters
         )
     }
 
     private fun getElementValue(
         elements: List<CmaGridLiveElement>,
         elementName: String,
+        min: Double,
+        max: Double,
     ): Double? {
-        return elements.firstOrNull { it.fastEle == elementName }?.value?.toDoubleOrNull()
+        return elements.firstOrNull { it.fastEle == elementName }
+            ?.value?.toDoubleOrNull()?.cmaSanitized(min, max)
     }
 
     private fun getCurrent(elements: List<CmaGridLiveElement>): CurrentWrapper {
         return CurrentWrapper(
-            weatherCode = getCmaWeatherCode(getElementValue(elements, "WEA")?.toInt()),
+            weatherCode = getCmaWeatherCode(getElementValue(elements, "WEA", -1.0, 99.0)?.toInt()),
             temperature = TemperatureWrapper(
-                temperature = getElementValue(elements, "TEM")?.celsius
+                temperature = getElementValue(elements, "TEM", -100.0, 100.0)?.celsius
             ),
             wind = Wind(
-                degree = getElementValue(elements, "WIND"),
-                speed = getElementValue(elements, "WINS")?.metersPerSecond
+                degree = getElementValue(elements, "WIND", 0.0, 360.0),
+                speed = getElementValue(elements, "WINS", 0.0, 200.0)?.metersPerSecond
             ),
-            relativeHumidity = getElementValue(elements, "RHU")?.percent,
-            cloudCover = getElementValue(elements, "TCDC")?.percent,
-            visibility = getElementValue(elements, "VIS")?.meters
+            relativeHumidity = getElementValue(elements, "RHU", 0.0, 100.0)?.percent,
+            cloudCover = getElementValue(elements, "TCDC", 0.0, 100.0)?.percent,
+            visibility = getElementValue(elements, "VIS", 0.0, 100_000.0)?.meters
         )
     }
 
