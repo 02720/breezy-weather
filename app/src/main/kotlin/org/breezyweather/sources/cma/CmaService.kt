@@ -21,7 +21,7 @@ import breezyweather.domain.location.model.Location
 import breezyweather.domain.source.SourceContinent
 import breezyweather.domain.source.SourceFeature
 import breezyweather.domain.weather.model.Alert
-import breezyweather.domain.weather.model.AlertSeverity
+import breezyweather.domain.weather.reference.AlertSeverity
 import breezyweather.domain.weather.model.Wind
 import breezyweather.domain.weather.wrappers.CurrentWrapper
 import breezyweather.domain.weather.wrappers.DailyWrapper
@@ -144,7 +144,7 @@ class CmaService @Inject constructor(
     }
 
     // Only supports its own country
-    override val knownAmbiguousCountryCodes: Array<String>? = arrayOf("CN")
+    val knownAmbiguousCountryCodes: Array<String>? = arrayOf("CN")
 
     // LocationParametersSource
     override fun needsLocationParametersRefresh(
