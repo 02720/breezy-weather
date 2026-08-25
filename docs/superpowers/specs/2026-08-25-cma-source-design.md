@@ -194,10 +194,12 @@ requestedFeatures 过滤后为空 → 直接返回空 WeatherWrapper
 | V11293 | current.wind.speed (m/s)；V11292T → wind.degree（§3.5 同一解析器） |
 | V20001 | current.visibility (m) |
 | V20003T | current.weatherText；weatherCode 由文本反查（晴→CLEAR 等，查不到则 null） |
-| V13019 | current.precipitation.total (mm) |
+
+注：`CurrentWrapper` 无 precipitation 字段，V13019（实况降水）与格点 PRE_1H 无法通过
+CURRENT 输出，不映射（规格 §7 非目标原则：不造字段）。
 | D_datetime | （不单独使用；CurrentWrapper 无观测时间字段） |
 
-格点兜底映射：TEM/RHU/WINS/WIND/WEA/VIS/PRE_1H/TCDC 对应同名字段；WEA 数值码用 §3.5 映射。
+格点兜底映射：TEM/RHU/WINS/WIND/WEA/VIS/TCDC 对应同名字段；WEA 数值码用 §3.5 映射。
 
 ### 3.7 ALERT 映射与过滤
 
