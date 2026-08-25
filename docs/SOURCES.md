@@ -607,7 +607,7 @@ This source aggregates data from Beijing Meteorological Service, ColorfulClouds 
 
 ### 中国气象数据网
 
-**[中国气象数据网](https://data.cma.cn/)** (China Meteorological Data Service Center) is the official open data portal of the China Meteorological Administration, operated by the National Meteorological Information Center. Data is retrieved from free public interfaces powering its gridded GIS display page.
+**[中国气象数据网](https://data.cma.cn/)** (China Meteorological Data Service Center) is the official open data portal of the China Meteorological Administration, operated by the National Meteorological Information Center. Data is retrieved from the same free public interfaces powering its gridded GIS display page, so values match the website: gridded live analysis and gridded GOWFS forecast at the exact coordinates, and alerts selected by administrative region.
 
 | Feature                        | Detail                                                           |
 |--------------------------------|------------------------------------------------------------------|
@@ -618,7 +618,7 @@ This source aggregates data from Beijing Meteorological Service, ColorfulClouds 
 | 😶‍🌫️ **Air quality**         | Not available                                                    |
 | 🤧 **Pollen**                  | Not available                                                    |
 | ☔ **Precipitation nowcasting** | Not available                                                    |
-| ⚠️ **Alerts**                  | Available (official CMA warnings, filtered within 100 km)        |
+| ⚠️ **Alerts**                  | Available (official CMA warnings, filtered by administrative region) |
 | 📊 **Normals**                 | Not available                                                    |
 | 🧭 **Address lookup**          | Not available                                                    |
 
@@ -630,9 +630,9 @@ This source aggregates data from Beijing Meteorological Service, ColorfulClouds 
 | Temperature               | ✅         | Dew Point         | ❌                          |
 | Precipitation             | ❌         | UV Index          | ❌                          |
 | Precipitation Probability | ❌         | Sunshine Duration | ❌                          |
-| Precipitation Duration    | ❌         | Cloud Cover       | ✅ (grid fallback only)     |
+| Precipitation Duration    | ❌         | Cloud Cover       | ✅ (Current)                |
 | Wind                      | ✅         | Visibility        | ✅ (Current)                |
-| Pressure                  | ✅ (Current) | Ceiling         | ❌                          |
+| Pressure                  | ❌         | Ceiling           | ❌                          |
 </details>
 
 ### Danmarks Meteorologiske Institut

@@ -21,7 +21,6 @@ import breezyweather.domain.location.model.Location
 import breezyweather.domain.source.SourceContinent
 import breezyweather.domain.source.SourceFeature
 import breezyweather.domain.weather.model.Alert
-import breezyweather.domain.weather.reference.AlertSeverity
 import breezyweather.domain.weather.model.Wind
 import breezyweather.domain.weather.wrappers.CurrentWrapper
 import breezyweather.domain.weather.wrappers.DailyWrapper
@@ -32,17 +31,17 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import io.reactivex.rxjava3.core.Observable
 import org.breezyweather.common.exceptions.InvalidLocationException
 import org.breezyweather.common.source.HttpSource
-import org.breezyweather.common.source.LocationParametersSource
 import org.breezyweather.common.source.NonFreeNetSource
 import org.breezyweather.common.source.WeatherSource
 import org.breezyweather.common.source.WeatherSource.Companion.PRIORITY_HIGHEST
 import org.breezyweather.common.source.WeatherSource.Companion.PRIORITY_NONE
 import org.breezyweather.sources.cma.json.CmaAlert
-import org.breezyweather.sources.cma.json.CmaForecastItem
+import org.breezyweather.sources.cma.json.CmaGridForecastDay
+import org.breezyweather.sources.cma.json.CmaGridForecastHalf
 import org.breezyweather.sources.cma.json.CmaGridLiveElement
-import org.breezyweather.sources.cma.json.CmaStationContent
+import org.breezyweather.sources.common.buildChineseAlertHeadline
+import org.breezyweather.sources.common.getCleanChineseAlertTitle
 import org.breezyweather.unit.distance.Distance.Companion.meters
-import org.breezyweather.unit.pressure.Pressure.Companion.hectopascals
 import org.breezyweather.unit.ratio.Ratio.Companion.percent
 import org.breezyweather.unit.speed.Speed.Companion.metersPerSecond
 import org.breezyweather.unit.temperature.Temperature.Companion.celsius
@@ -59,25 +58,27 @@ import javax.inject.Named
 /**
  * zip() cannot emit a null value, so each request result is wrapped in a holder
  */
-private data class CmaLatestResult(
-    val content: CmaStationContent?,
-    val error: Throwable?,
-)
-
 private data class CmaGridResult(
     val elements: List<CmaGridLiveElement>?,
     val error: Throwable?,
 )
 
+private data class CmaForecastResult(
+    val days: List<CmaGridForecastDay>?,
+    val error: Throwable?,
+)
+
 private data class CmaAlertFetchResult(
     val alerts: List<CmaAlert>?,
+    /** True when alerts could not be resolved to an administrative area and a distance filter was applied instead */
+    val distanceFiltered: Boolean,
     val error: Throwable?,
 )
 
 class CmaService @Inject constructor(
     @ApplicationContext context: Context,
     @Named("JsonClient") val client: Retrofit.Builder,
-) : HttpSource(), WeatherSource, LocationParametersSource, NonFreeNetSource {
+) : HttpSource(), WeatherSource, NonFreeNetSource {
 
     override val id = "cma"
     override val name = "中国气象数据网"
@@ -146,36 +147,6 @@ class CmaService @Inject constructor(
     // Only supports its own country
     val knownAmbiguousCountryCodes: Array<String>? = arrayOf("CN")
 
-    // LocationParametersSource
-    override fun needsLocationParametersRefresh(
-        location: Location,
-        coordinatesChanged: Boolean,
-        features: List<SourceFeature>,
-    ): Boolean {
-        if (coordinatesChanged) return true
-        val stationId = location.parameters.getOrElse(id) { null }?.getOrElse("stationId") { null }
-        return stationId.isNullOrEmpty()
-    }
-
-    override fun requestLocationParameters(
-        context: Context,
-        location: Location,
-    ): Observable<Map<String, String>> {
-        return mApi.getNearStation(
-            longitude = location.longitude,
-            latitude = location.latitude,
-            dist = NEAR_STATION_SEARCH_DISTANCE_KM
-        ).map { result ->
-            // No station nearby must not fail the whole refresh: alerts and the
-            // gridded current fallback work without a station
-            result.data
-                ?.takeIf { it.returnCode == 0 && it.dataMethod == "station" }
-                ?.DS?.stationId?.takeIf { it.isNotBlank() }
-                ?.let { mapOf("stationId" to it) }
-                ?: emptyMap()
-        }
-    }
-
     // WeatherSource
     override fun requestWeather(
         context: Context,
@@ -188,28 +159,8 @@ class CmaService @Inject constructor(
             return Observable.just(WeatherWrapper(failedFeatures = failedFeatures))
         }
 
-        val stationId = location.parameters.getOrElse(id) { null }?.getOrElse("stationId") { null }
-        val wantLatest = SourceFeature.FORECAST in features ||
-            (SourceFeature.CURRENT in features && !stationId.isNullOrEmpty())
-
-        val latestObservable: Observable<CmaLatestResult> = when {
-            !wantLatest -> Observable.just(CmaLatestResult(null, null))
-            stationId.isNullOrEmpty() -> Observable.just(
-                CmaLatestResult(null, InvalidLocationException())
-            )
-            else -> mApi.getStationLatest(stationId, getUtcDatetime())
-                .map { result ->
-                    if (result.code == 200 && result.content != null) {
-                        CmaLatestResult(result.content, null)
-                    } else {
-                        CmaLatestResult(null, InvalidLocationException())
-                    }
-                }
-                .onErrorResumeNext { e -> Observable.just(CmaLatestResult(null, e)) }
-        }
-
         val gridObservable: Observable<CmaGridResult> =
-            if (SourceFeature.CURRENT in features && stationId.isNullOrEmpty()) {
+            if (SourceFeature.CURRENT in features) {
                 mApi.getGridLiveData(location.latitude, location.longitude)
                     .map { result ->
                         if (result.returnCode == "0" && !result.list.isNullOrEmpty()) {
@@ -223,53 +174,60 @@ class CmaService @Inject constructor(
                 Observable.just(CmaGridResult(null, null))
             }
 
-        val alertObservable: Observable<CmaAlertFetchResult> =
-            if (SourceFeature.ALERT in features) {
-                mApi.getEffectiveAlerts()
+        val forecastObservable: Observable<CmaForecastResult> =
+            if (SourceFeature.FORECAST in features) {
+                mApi.getGridForecast(location.latitude, location.longitude)
                     .map { result ->
-                        if (result.code == "200") {
-                            CmaAlertFetchResult(result.data.orEmpty(), null)
+                        if (!result.detail.isNullOrEmpty()) {
+                            CmaForecastResult(result.detail, null)
                         } else {
-                            CmaAlertFetchResult(null, RuntimeException(result.message))
+                            CmaForecastResult(null, InvalidLocationException())
                         }
                     }
-                    .onErrorResumeNext { e -> Observable.just(CmaAlertFetchResult(null, e)) }
+                    .onErrorResumeNext { e -> Observable.just(CmaForecastResult(null, e)) }
             } else {
-                Observable.just(CmaAlertFetchResult(null, null))
+                Observable.just(CmaForecastResult(null, null))
             }
 
-        return Observable.zip(latestObservable, gridObservable, alertObservable) { latest, grid, alerts ->
+        val alertObservable: Observable<CmaAlertFetchResult> =
+            if (SourceFeature.ALERT in features) {
+                getAlertObservable(location)
+            } else {
+                Observable.just(CmaAlertFetchResult(null, false, null))
+            }
+
+        return Observable.zip(gridObservable, forecastObservable, alertObservable) { grid, forecast, alerts ->
             var dailyForecast: List<DailyWrapper>? = null
             var current: CurrentWrapper? = null
             var alertList: List<Alert>? = null
 
             if (SourceFeature.FORECAST in features) {
-                val foreList = latest.content?.forecast?.foreList
-                if (foreList.isNullOrEmpty()) {
+                if (forecast.days == null) {
                     failedFeatures[SourceFeature.FORECAST] =
-                        latest.error ?: InvalidLocationException()
+                        forecast.error ?: InvalidLocationException()
                 } else {
-                    getDailyList(foreList)?.let { dailyForecast = it }
+                    getDailyList(forecast.days)?.let { dailyForecast = it }
                         ?: run {
-                            failedFeatures[SourceFeature.FORECAST] = InvalidLocationException()
+                            failedFeatures[SourceFeature.FORECAST] =
+                                forecast.error ?: InvalidLocationException()
                         }
                 }
             }
 
             if (SourceFeature.CURRENT in features) {
-                when {
-                    latest.content != null -> current = getCurrent(latest.content)
-                    grid.elements != null -> current = getCurrent(grid.elements)
-                    else -> failedFeatures[SourceFeature.CURRENT] =
-                        latest.error ?: grid.error ?: InvalidLocationException()
+                if (grid.elements == null) {
+                    failedFeatures[SourceFeature.CURRENT] =
+                        grid.error ?: InvalidLocationException()
+                } else {
+                    current = getCurrent(grid.elements)
                 }
             }
 
             if (SourceFeature.ALERT in features) {
-                if (alerts.alerts != null) {
-                    alertList = getAlertList(alerts.alerts, location)
-                } else {
+                if (alerts.alerts == null) {
                     failedFeatures[SourceFeature.ALERT] = alerts.error ?: RuntimeException()
+                } else {
+                    alertList = getAlertList(alerts.alerts, alerts.distanceFiltered, location)
                 }
             }
 
@@ -279,100 +237,105 @@ class CmaService @Inject constructor(
                 alertList = alertList,
                 failedFeatures = failedFeatures
             )
-        }.flatMap { wrapper ->
-            // The gridded endpoint was only queried upfront when no station was
-            // known: retry it once as a fallback when the station request failed
-            val shouldFallbackToGrid = SourceFeature.CURRENT in features &&
-                !stationId.isNullOrEmpty() &&
-                wrapper.current == null &&
-                wrapper.failedFeatures?.containsKey(SourceFeature.CURRENT) == true
-            if (!shouldFallbackToGrid) {
-                Observable.just(wrapper)
-            } else {
-                mApi.getGridLiveData(location.latitude, location.longitude)
-                    .flatMap { result ->
-                        if (result.returnCode == "0" && !result.list.isNullOrEmpty()) {
-                            Observable.just(
-                                WeatherWrapper(
-                                    dailyForecast = wrapper.dailyForecast,
-                                    current = getCurrent(result.list),
-                                    alertList = wrapper.alertList,
-                                    failedFeatures = wrapper.failedFeatures
-                                        ?.toMutableMap()
-                                        ?.apply { remove(SourceFeature.CURRENT) }
-                                )
-                            )
-                        } else {
-                            Observable.just(wrapper)
-                        }
-                    }
-                    .onErrorResumeNext { Observable.just(wrapper) }
-            }
         }
+    }
+
+    /**
+     * Alerts applicable to a location, queried the same way the official website
+     * does: by administrative area (province + county codes resolved through
+     * reverse geocoding). When the area cannot be resolved or the area-scoped
+     * query fails, falls back to a nationwide query filtered by distance.
+     */
+    private fun getAlertObservable(
+        location: Location,
+    ): Observable<CmaAlertFetchResult> {
+        return mApi.getRegeo(location = "${location.longitude},${location.latitude}")
+            .flatMap { result ->
+                fetchAreaAlerts(result.regeocode?.addressComponent?.adcode)
+            }
+            .onErrorResumeNext { fetchNationwideAlerts() }
+    }
+
+    private fun fetchAreaAlerts(
+        adcode: String?,
+    ): Observable<CmaAlertFetchResult> {
+        val provinceCode = adcode?.let(::getCmaProvinceCode)
+        if (adcode == null || provinceCode == null || adcode in UNRESOLVABLE_AREA_CODES) {
+            return fetchNationwideAlerts()
+        }
+        return mApi.getEffectiveAlerts(areaCode = "$provinceCode,$adcode")
+            .flatMap { result ->
+                if (result.code == "200") {
+                    Observable.just(CmaAlertFetchResult(result.data.orEmpty(), false, null))
+                } else {
+                    fetchNationwideAlerts()
+                }
+            }
+            .onErrorResumeNext { fetchNationwideAlerts() }
+    }
+
+    private fun fetchNationwideAlerts(): Observable<CmaAlertFetchResult> {
+        return mApi.getEffectiveAlerts(areaCode = NATIONWIDE_AREA_CODE)
+            .map { result ->
+                if (result.code == "200") {
+                    CmaAlertFetchResult(result.data.orEmpty(), true, null)
+                } else {
+                    CmaAlertFetchResult(null, true, RuntimeException(result.message))
+                }
+            }
+            .onErrorResumeNext { e ->
+                Observable.just(CmaAlertFetchResult(null, true, e))
+            }
     }
 
     private fun getDailyList(
-        foreList: List<CmaForecastItem>,
+        days: List<CmaGridForecastDay>,
     ): List<DailyWrapper>? {
         val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH).apply {
             timeZone = TimeZone.getTimeZone("Asia/Shanghai")
+            isLenient = false
         }
-        val days = LinkedHashMap<Date, Pair<CmaForecastItem?, CmaForecastItem?>>()
-        for (item in foreList) {
-            val date = try {
-                dateFormatter.parse(item.date ?: continue)
-            } catch (e: ParseException) {
-                continue
-            } ?: continue
-            val halves = days.getOrPut(date) { null to null }
-            days[date] = if (item.period == "夜间") {
-                halves.copy(second = item)
-            } else {
-                halves.copy(first = item)
+        return days.take(MAX_FORECAST_DAYS)
+            .mapNotNull { day ->
+                val date = try {
+                    dateFormatter.parse(day.date ?: return@mapNotNull null)
+                } catch (e: ParseException) {
+                    null
+                } ?: return@mapNotNull null
+                DailyWrapper(
+                    date = date,
+                    day = day.day?.let(::getHalfDay),
+                    night = day.night?.let(::getHalfDay)
+                )
             }
-        }
-        if (days.isEmpty()) return null
-
-        return days.map { (date, halves) ->
-            DailyWrapper(
-                date = date,
-                day = halves.first?.let { getHalfDay(it) },
-                night = halves.second?.let { getHalfDay(it) }
-            )
-        }
+            .takeIf { it.isNotEmpty() }
     }
 
-    private fun getHalfDay(item: CmaForecastItem): HalfDayWrapper {
+    private fun getHalfDay(
+        half: CmaGridForecastHalf,
+    ): HalfDayWrapper {
         return HalfDayWrapper(
-            weatherText = item.weatherText,
-            weatherCode = getCmaWeatherCode(item.weatherCode),
+            weatherText = half.weather?.info
+                ?.takeIf { it.isNotBlank() && !it.cmaMissingValue() },
+            weatherCode = getCmaWeatherCode(half.weather?.img?.trim()?.toIntOrNull()),
             temperature = TemperatureWrapper(
-                temperature = item.temperature
+                temperature = half.weather?.temperature
+                    ?.trim()
                     ?.toDoubleOrNull()
                     ?.cmaSanitized(-100.0, 100.0)
                     ?.celsius
             ),
             wind = Wind(
-                degree = getCmaWindDirectionDegree(item.wind),
-                speed = getCmaWindSpeed(item.wind)?.metersPerSecond
+                degree = half.wind?.direct
+                    ?.trim()
+                    ?.toDoubleOrNull()
+                    ?.cmaSanitized(0.0, 360.0),
+                speed = half.wind?.power
+                    ?.trim()
+                    ?.toDoubleOrNull()
+                    ?.cmaSanitized(0.0, 200.0)
+                    ?.metersPerSecond
             )
-        )
-    }
-
-    private fun getCurrent(content: CmaStationContent): CurrentWrapper {
-        return CurrentWrapper(
-            weatherText = content.weatherText?.takeIf { it.isNotBlank() },
-            weatherCode = getCmaWeatherCodeFromText(content.weatherText),
-            temperature = TemperatureWrapper(
-                temperature = content.temperature.cmaSanitized(-100.0, 100.0)?.celsius
-            ),
-            wind = Wind(
-                degree = getCmaWindDirectionDegree(content.windDirectionText),
-                speed = content.windSpeed.cmaSanitized(0.0, 200.0)?.metersPerSecond
-            ),
-            relativeHumidity = content.humidity.cmaSanitized(0.0, 100.0)?.percent,
-            pressure = content.pressure.cmaSanitized(300.0, 1200.0)?.hectopascals,
-            visibility = content.visibility.cmaSanitized(0.0, 100_000.0)?.meters
         )
     }
 
@@ -404,33 +367,41 @@ class CmaService @Inject constructor(
 
     private fun getAlertList(
         alerts: List<CmaAlert>,
+        distanceFiltered: Boolean,
         location: Location,
     ): List<Alert> {
         val dateFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH).apply {
             timeZone = TimeZone.getTimeZone("Asia/Shanghai")
+            isLenient = false
         }
-        return alerts.asSequence()
+        var candidates = alerts.asSequence()
             .filter { it.status == "Actual" }
-            .filter { it.lat != null && it.lon != null }
-            .filter {
-                getCmaDistanceKm(location.latitude, location.longitude, it.lat!!, it.lon!!) <=
-                    ALERT_DISTANCE_THRESHOLD_KM
-            }
-            .map { alert ->
-                val severity = when (alert.severity?.lowercase(Locale.ENGLISH)) {
-                    "red" -> AlertSeverity.EXTREME
-                    "orange" -> AlertSeverity.SEVERE
-                    "yellow" -> AlertSeverity.MODERATE
-                    "blue" -> AlertSeverity.MINOR
-                    else -> AlertSeverity.UNKNOWN
+        if (distanceFiltered) {
+            candidates = candidates
+                .filter { it.lat != null && it.lon != null }
+                .filter {
+                    getCmaDistanceKm(location.latitude, location.longitude, it.lat!!, it.lon!!) <=
+                        ALERT_DISTANCE_THRESHOLD_KM
                 }
+        }
+        return candidates
+            .mapNotNull { alert ->
+                // The website drops alerts with an unknown severity: do the same
+                val severity = getCmaAlertSeverity(alert.severity) ?: return@mapNotNull null
                 Alert(
                     alertId = alert.identifier
                         ?: Objects.hash(alert.headline, alert.severity, alert.effective).toString(),
                     startDate = parseDate(dateFormatter, alert.effective),
                     endDate = parseDate(dateFormatter, alert.expires),
-                    headline = alert.headline,
-                    description = alert.description,
+                    // Concise "{type}{level}预警" title like on the official website,
+                    // e.g. "雷电黄色预警" instead of the verbose raw headline
+                    headline = buildChineseAlertHeadline(
+                        alert.eventTypeCN,
+                        getCmaAlertLevelName(alert.severity)
+                    )
+                        ?: getCleanChineseAlertTitle(alert.headline)
+                        ?: alert.headline?.trim()?.ifEmpty { null },
+                    description = alert.description?.trim()?.ifEmpty { null },
                     source = alert.senderName,
                     severity = severity,
                     color = Alert.colorFromSeverity(severity)
@@ -451,16 +422,15 @@ class CmaService @Inject constructor(
         }
     }
 
-    private fun getUtcDatetime(): String {
-        val formatter = SimpleDateFormat("yyyyMMddHHmmss", Locale.ENGLISH).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
-        }
-        return formatter.format(Date())
-    }
-
     companion object {
         private const val BASE_URL = "https://data.cma.cn/"
-        private const val NEAR_STATION_SEARCH_DISTANCE_KM = 100
+        private const val NATIONWIDE_AREA_CODE = "100000"
+
+        // Sentinel codes returned by reverse geocoding for points that cannot be
+        // placed in a county: "100000" (nationwide) and "900000" (unpopulated area)
+        private val UNRESOLVABLE_AREA_CODES = setOf("100000", "900000")
+
         private const val ALERT_DISTANCE_THRESHOLD_KM = 100.0
+        private const val MAX_FORECAST_DAYS = 7
     }
 }

@@ -16,14 +16,17 @@
 
 package org.breezyweather.sources.cma
 
+import breezyweather.domain.weather.reference.AlertSeverity
 import breezyweather.domain.weather.reference.WeatherCode
+import java.util.Locale
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
- * CMA weather phenomenon codes (WEP) mapped to Breezy Weather codes:
+ * CMA weather phenomenon codes (WEP) mapped to Breezy Weather codes.
+ * Same code space as the "img" field of the gridded forecast endpoint:
  * 0 晴 1 多云 2 阴 3 阵雨 4 雷阵雨 5 雷阵雨伴冰雹 6 雨夹雪 7 小雨 8 中雨 9 大雨
  * 10 暴雨 11 大暴雨 12 特大暴雨 13 阵雪 14 小雪 15 中雪 16 大雪 17 暴雪 18 雾
  * 19 冻雨 20 沙尘暴 21-25 各级降雨过渡 26-28 各级降雪过渡 29 浮尘 30 扬沙
@@ -45,23 +48,6 @@ internal fun getCmaWeatherCode(wepCode: Int?): WeatherCode? {
     }
 }
 
-internal fun getCmaWeatherCodeFromText(text: String?): WeatherCode? {
-    if (text.isNullOrBlank()) return null
-    return when {
-        text.contains("雷") -> WeatherCode.THUNDERSTORM
-        text.contains("冰雹") -> WeatherCode.HAIL
-        text.contains("雨夹雪") || text.contains("冻雨") -> WeatherCode.SLEET
-        text.contains("雪") -> WeatherCode.SNOW
-        text.contains("雨") -> WeatherCode.RAIN
-        text.contains("雾") -> WeatherCode.FOG
-        text.contains("霾") || text.contains("沙尘") || text.contains("浮尘") -> WeatherCode.HAZE
-        text.contains("阴") -> WeatherCode.CLOUDY
-        text.contains("多云") -> WeatherCode.PARTLY_CLOUDY
-        text.contains("晴") -> WeatherCode.CLEAR
-        else -> null
-    }
-}
-
 /**
  * Drops CMA missing-data sentinels (the website treats values >= 9999 as missing)
  * and any other magnitude outside the given physical bounds
@@ -71,63 +57,53 @@ internal fun Double?.cmaSanitized(
     max: Double,
 ): Double? = this?.takeIf { it.isFinite() && it in min..max }
 
-private fun directionDegrees(direction: Char): Double? = when (direction) {
-    '东' -> 90.0
-    '南' -> 180.0
-    '西' -> 270.0
-    '北' -> 0.0
-    else -> null
-}
-
-private fun shortestDelta(
-    from: Double,
-    to: Double,
-): Double {
-    var delta = (to - from) % 360.0
-    if (delta > 180.0) delta -= 360.0
-    if (delta < -180.0) delta += 360.0
-    return delta
+/**
+ * True when a textual field holds a missing-data sentinel instead of content,
+ * e.g. the weather text "9999" returned outside the validity period
+ */
+internal fun String?.cmaMissingValue(): Boolean {
+    val value = this?.trim()?.toDoubleOrNull() ?: return false
+    return value >= 9998.0 || value <= -998.0
 }
 
 /**
- * Parses wind direction texts such as "北风", "东北风", "北偏东" (optionally followed by
- * a Beaufort scale like "北偏东1级"). Returns degrees clockwise from north,
- * or null when unparsable ("无持续风向", "旋转不定", etc.)
+ * Builds the province-level administrative code from a county-level code,
+ * e.g. "450405" (长洲区) -> "450000" (广西壮族自治区).
+ * Returns null for malformed codes.
  */
-internal fun getCmaWindDirectionDegree(text: String?): Double? {
-    if (text.isNullOrBlank()) return null
-    val directionPart = text.takeWhile { !it.isDigit() }.removeSuffix("风")
-    val directions = directionPart.filter { it in "东南西北" }.mapNotNull(::directionDegrees)
-    if (directions.isEmpty()) return null
-    val base = directions.first()
-    val modifier = directions.getOrNull(1)
-    return when {
-        modifier == null -> base
-        directionPart.contains('偏') ->
-            (base + shortestDelta(base, modifier) / 4.0 + 360.0) % 360.0
-        else -> (base + shortestDelta(base, modifier) / 2.0 + 360.0) % 360.0
+internal fun getCmaProvinceCode(areaCode: String?): String? {
+    if (areaCode == null || areaCode.length != 6 || areaCode.any { !it.isDigit() }) return null
+    return areaCode.substring(0, 2) + "0000"
+}
+
+/**
+ * Level name of a CMA alert severity, matching the naming used by the official
+ * website, e.g. "Yellow" -> "黄色". "White" (e.g. typhoon white alerts issued by
+ * some provincial offices) is handled defensively as the lowest level.
+ */
+internal fun getCmaAlertLevelName(severity: String?): String? =
+    when (severity?.lowercase(Locale.ENGLISH)) {
+        "red" -> "红色"
+        "orange" -> "橙色"
+        "yellow" -> "黄色"
+        "blue" -> "蓝色"
+        "white" -> "白色"
+        else -> null
     }
-}
 
 /**
- * Beaufort scale midpoints in m/s for levels 0..17 (13+ is the extended scale
- * used over the oceans)
+ * Maps a CMA alert severity to a Breezy Weather severity.
+ * Returns null for unknown severities: the official website drops such alerts,
+ * so we do the same to stay consistent.
  */
-private val BEAUFORT_MIDPOINTS = doubleArrayOf(
-    0.0, 0.9, 2.45, 4.45, 6.7, 9.35, 12.3, 15.5, 18.95, 22.6, 26.45, 30.55,
-    34.0, 36.9, 41.4, 46.1, 50.9, 55.6
-)
-
-/**
- * Extracts the trailing Beaufort level from texts like "北偏东1级" and converts it
- * to a speed in m/s. Levels above 17 (extended Beaufort scale) are treated as
- * missing data.
- */
-internal fun getCmaWindSpeed(text: String?): Double? {
-    val level = text?.takeLastWhile { it.isDigit() }?.takeIf { it.isNotEmpty() }
-        ?.toIntOrNull() ?: return null
-    return BEAUFORT_MIDPOINTS.getOrNull(level)
-}
+internal fun getCmaAlertSeverity(severity: String?): AlertSeverity? =
+    when (severity?.lowercase(Locale.ENGLISH)) {
+        "red" -> AlertSeverity.EXTREME
+        "orange" -> AlertSeverity.SEVERE
+        "yellow" -> AlertSeverity.MODERATE
+        "blue", "white" -> AlertSeverity.MINOR
+        else -> null
+    }
 
 internal fun getCmaDistanceKm(
     lat1: Double,

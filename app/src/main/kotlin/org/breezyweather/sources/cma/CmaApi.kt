@@ -18,46 +18,24 @@ package org.breezyweather.sources.cma
 
 import io.reactivex.rxjava3.core.Observable
 import org.breezyweather.sources.cma.json.CmaAlertResult
+import org.breezyweather.sources.cma.json.CmaGridForecastResult
 import org.breezyweather.sources.cma.json.CmaGridLiveResult
-import org.breezyweather.sources.cma.json.CmaNearStationResult
-import org.breezyweather.sources.cma.json.CmaStationLatestResult
+import org.breezyweather.sources.cma.json.CmaRegeoResult
 import retrofit2.http.GET
-import retrofit2.http.Path
 import retrofit2.http.Query
 
 /**
  * CMA (data.cma.cn) API
  *
- * Reverse-engineered from https://data.cma.cn/dataGis/static/gridgis/#/pcindex
+ * Reverse-engineered from https://data.cma.cn/dataGis/static/gridgis/#/pcindex,
+ * mirroring the endpoints its detail panel calls for a given location.
  * Last checked: 2026-08-25
  */
 interface CmaApi {
 
     /**
-     * Nearest national station for given coordinates.
-     * Note: the longitude parameter is intentionally spelled "lag" by the server.
-     */
-    @GET("dataGis/api/station/getNearStation")
-    fun getNearStation(
-        @Query("lag") longitude: Double,
-        @Query("lat") latitude: Double,
-        @Query("dist") dist: Int,
-        @Query("location") location: Int = 1,
-        @Query("stationName") stationName: String = "none",
-        @Query("apiTp") apiTp: Int = 1,
-    ): Observable<CmaNearStationResult>
-
-    /**
-     * Latest observation and 7-day day/night forecast for a station
-     */
-    @GET("app/Rest/liveDataService/station/{stationId}/latest")
-    fun getStationLatest(
-        @Path("stationId") stationId: String,
-        @Query("datetime") datetime: String,
-    ): Observable<CmaStationLatestResult>
-
-    /**
-     * Gridded live data for a point, used as a fallback when no station is found
+     * Gridded live analysis for a point: the same data the website shows in its
+     * live condition panel (temperature, wind, humidity, cloud cover, visibility...)
      */
     @GET("dataGis/multiSource/getAPILiveDataInfo")
     fun getGridLiveData(
@@ -66,11 +44,35 @@ interface CmaApi {
     ): Observable<CmaGridLiveResult>
 
     /**
-     * All currently effective alerts nationwide
+     * Gridded day/night forecast (GOWFS) for a point: what the website shows
+     * in its 7-day panel
+     */
+    @GET("rest/gowfs/day")
+    fun getGridForecast(
+        @Query("lat") latitude: Double,
+        @Query("lon") longitude: Double,
+    ): Observable<CmaGridForecastResult>
+
+    /**
+     * Reverse geocoding proxy (AMap) used to resolve coordinates to the
+     * administrative division code required for area-based alert queries.
+     * The location must be formatted as "longitude,latitude".
+     */
+    @GET("dataGis/api/gdmap/regeo")
+    fun getRegeo(
+        @Query("location") location: String,
+        @Query("extensions") extensions: String = "all",
+        @Query("radius") radius: Int = 1000,
+    ): Observable<CmaRegeoResult>
+
+    /**
+     * Currently effective alerts for the given administrative area code(s).
+     * Pass a comma-separated "province,county" pair (e.g. "450000,450405") to
+     * mirror the website, or the nationwide code "100000" for everything.
      */
     @GET("dataGis/api/internetWarn/getEffectiveAlert")
     fun getEffectiveAlerts(
-        @Query("areaCode") areaCode: Long = 100000,
+        @Query("areaCode") areaCode: String,
         @Query("eventCode") eventCode: Long = 10000,
         @Query("isAreaRecursion") isAreaRecursion: Int = 1,
         @Query("severity") severity: String = "all",

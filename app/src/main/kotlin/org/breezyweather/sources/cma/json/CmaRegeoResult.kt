@@ -18,27 +18,25 @@ package org.breezyweather.sources.cma.json
 
 import kotlinx.serialization.Serializable
 
+/**
+ * Response of dataGis/api/gdmap/regeo: reverse geocoding proxy used by the
+ * website to resolve coordinates to an administrative area code.
+ * Note: unresolvable points return the sentinel codes "100000" (nationwide)
+ * or "900000" (outside populated areas) instead of a county code.
+ */
 @Serializable
-data class CmaNearStationResult(
-    val code: String? = null,
-    val message: String? = null,
-    val data: CmaNearStationData? = null,
+data class CmaRegeoResult(
+    val infocode: String? = null,
+    val regeocode: CmaRegeocode? = null,
 )
 
 @Serializable
-data class CmaNearStationData(
-    val returnCode: Int? = null,
-    val errorMsg: String? = null,
-    val dataMethod: String? = null,
-    val DS: CmaNearStation? = null,
+data class CmaRegeocode(
+    val addressComponent: CmaRegeoAddressComponent? = null,
 )
 
 @Serializable
-data class CmaNearStation(
-    val stationId: String? = null,
-    val stationName: String? = null,
-    val province: String? = null,
-    val city: String? = null,
-    val district: String? = null,
-    val areacode: String? = null,
+data class CmaRegeoAddressComponent(
+    /** 6-digit administrative division code, e.g. "450405" */
+    val adcode: String? = null,
 )
