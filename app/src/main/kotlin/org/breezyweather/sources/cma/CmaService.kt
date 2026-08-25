@@ -290,7 +290,7 @@ class CmaService @Inject constructor(
                 Observable.just(wrapper)
             } else {
                 mApi.getGridLiveData(location.latitude, location.longitude)
-                    .map { result ->
+                    .map<CurrentWrapper?> { result ->
                         if (result.returnCode == "0" && !result.list.isNullOrEmpty()) {
                             getCurrent(result.list)
                         } else {
