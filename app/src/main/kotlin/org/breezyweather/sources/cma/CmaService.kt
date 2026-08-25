@@ -290,25 +290,20 @@ class CmaService @Inject constructor(
                 Observable.just(wrapper)
             } else {
                 mApi.getGridLiveData(location.latitude, location.longitude)
-                    .map<CurrentWrapper?> { result ->
+                    .flatMap { result ->
                         if (result.returnCode == "0" && !result.list.isNullOrEmpty()) {
-                            getCurrent(result.list)
-                        } else {
-                            null
-                        }
-                    }
-                    .map { gridCurrent ->
-                        if (gridCurrent == null) {
-                            wrapper
-                        } else {
-                            WeatherWrapper(
-                                dailyForecast = wrapper.dailyForecast,
-                                current = gridCurrent,
-                                alertList = wrapper.alertList,
-                                failedFeatures = wrapper.failedFeatures
-                                    ?.toMutableMap()
-                                    ?.apply { remove(SourceFeature.CURRENT) }
+                            Observable.just(
+                                WeatherWrapper(
+                                    dailyForecast = wrapper.dailyForecast,
+                                    current = getCurrent(result.list),
+                                    alertList = wrapper.alertList,
+                                    failedFeatures = wrapper.failedFeatures
+                                        ?.toMutableMap()
+                                        ?.apply { remove(SourceFeature.CURRENT) }
+                                )
                             )
+                        } else {
+                            Observable.just(wrapper)
                         }
                     }
                     .onErrorResumeNext { Observable.just(wrapper) }
