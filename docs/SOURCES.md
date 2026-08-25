@@ -34,6 +34,7 @@ Below, you can find details about the support and implementation status for feat
 | 🇹🇩 Chad                          | [ClimWeb](#climweb)                                                                               | Alerts, Normals                                                                      |
 | 🇨🇳 China                         | [Caiyun](#caiyun) 🔐                                                                               | Forecast, Current, Air quality, Nowcasting, Alerts                               |
 | 🇨🇳 China                         | [China](#china)                                                                                   | Forecast, Current, Air quality, Nowcasting, Alerts, Address                          |
+| 🇨🇳 China                         | [中国气象数据网](#中国气象数据网) 🔓                                                              | Forecast, Current, Alerts                                                        |
 | 🇨🇩 Democratic Republic of Congo  | [ClimWeb](#climweb)                                                                               | Alerts                                                                               |
 | 🇩🇰 Denmark                       | [DMI](#danmarks-meteorologiske-institut)                                                          | Forecast, Alerts, Address                                                            |
 | 🇪🇪 Estonia                       | [Ilmateenistus](#ilmateenistus)                                                                   | Forecast, Address                                                                    |
@@ -602,6 +603,36 @@ This source aggregates data from Beijing Meteorological Service, ColorfulClouds 
 | Precipitation Duration    | ❌         | Cloud Cover       | ❌           |
 | Wind                      | ✅         | Visibility        | ✅ (Current) |
 | Pressure                  | ❌         | Ceiling           | ❌           |
+</details>
+
+### 中国气象数据网
+
+**[中国气象数据网](https://data.cma.cn/)** (China Meteorological Data Service Center) is the official open data portal of the China Meteorological Administration, operated by the National Meteorological Information Center. Data is retrieved from free public interfaces powering its gridded GIS display page.
+
+| Feature                        | Detail                                                           |
+|--------------------------------|------------------------------------------------------------------|
+| 🗺️ **Coverage**               | 🇨🇳 China                                                       |
+| 📆 **Daily forecast**          | Up to 7 days, split into half-days (daytime / nighttime)         |
+| ⏱️ **Hourly forecast**         | Not available                                                    |
+| ▶️ **Current observation**     | Available: can complement another source as a **Current Source** |
+| 😶‍🌫️ **Air quality**         | Not available                                                    |
+| 🤧 **Pollen**                  | Not available                                                    |
+| ☔ **Precipitation nowcasting** | Not available                                                    |
+| ⚠️ **Alerts**                  | Available (official CMA warnings, filtered within 100 km)        |
+| 📊 **Normals**                 | Not available                                                    |
+| 🧭 **Address lookup**          | Not available                                                    |
+
+<details><summary><h4>Details of available data from 中国气象数据网</h4></summary>
+
+| Data                      | Available | Data              | Available                  |
+|---------------------------|-----------|-------------------|----------------------------|
+| Weather Condition         | ✅         | Humidity          | ✅ (Current)                |
+| Temperature               | ✅         | Dew Point         | ❌                          |
+| Precipitation             | ❌         | UV Index          | ❌                          |
+| Precipitation Probability | ❌         | Sunshine Duration | ❌                          |
+| Precipitation Duration    | ❌         | Cloud Cover       | ✅ (grid fallback only)     |
+| Wind                      | ✅         | Visibility        | ✅ (Current)                |
+| Pressure                  | ✅ (Current) | Ceiling         | ❌                          |
 </details>
 
 ### Danmarks Meteorologiske Institut

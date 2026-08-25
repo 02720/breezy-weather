@@ -97,7 +97,7 @@ In general, a weather source can be considered for inclusion in the official rel
 | 🇧🇹 Bhutan               | [NCHM](https://www.nchm.gov.bt/)              | ❌ no geolocation, no hourly                                                            | 2024-11-30   |
 | 🇧🇳 Brunei Darussalam    | [BDMD](https://www.met.gov.bn/)               | 🚧 _(in progress)_                                                                     | 2024-11-30   |
 | 🇰🇭 Cambodia             | [Cambodia](http://www.cambodiameteo.com/)     | ❌ no geolocation, no JSON                                                              | 2024-11-30   |
-| 🇨🇳 China                | Mixed China sources                           | ✅ included                                                                             |              |
+| 🇨🇳 China                | Mixed China sources incl. [CMA](https://data.cma.cn/) | ✅ included                                                                             | 2026-08-25   |
 | 🇭🇰 Hong Kong            | [HKO](https://www.hko.gov.hk/)                | ✅ included from v5.3.0                                                                 |              |
 | 🇮🇳 India                | [IMD](https://mausam.imd.gov.in/)             | ✅ included from v5.3.0                                                                 |              |
 | 🇮🇩 Indonesia            | [BMKG](https://www.bmkg.go.id/)               | ✅ included from v5.3.0                                                                 |              |

@@ -9,6 +9,9 @@
 **Improvements and fixes
 - Main screen settings - You can now reset blocks, daily trends, hourly trends to default order
 
+**Sources**
+- Add 中国气象数据网 (CMA, China) source: up to 7-day day/night forecast, current observation and official weather alerts, from free public interfaces of the China Meteorological Administration open data portal (secondary source, China only).
+
 
 # Version 6.2.2 (2026-08-23)
 
