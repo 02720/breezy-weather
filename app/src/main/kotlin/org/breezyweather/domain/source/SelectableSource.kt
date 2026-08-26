@@ -14,24 +14,11 @@
  * along with Breezy Weather. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package org.breezyweather.common.extensions
+package org.breezyweather.domain.source
 
-import android.content.Context
-import android.net.Uri
-import androidx.core.content.FileProvider
-import org.breezyweather.BuildConfig
-import java.io.File
-
-/**
- * Returns the uri of a file
- *
- * @param context context of application
- */
-fun File.getUriCompat(context: Context): Uri {
-    return FileProvider.getUriForFile(context, BuildConfig.APPLICATION_ID + ".fileprovider", this)
-}
-
-fun fileFromAsset(resource: Int, context: Context): File =
-    File("${context.cacheDir}/$resource").apply {
-        writeBytes(context.resources.openRawResource(resource).readBytes())
-    }
+data class SelectableSource(
+    val id: String,
+    val displayName: String,
+    val enabled: Boolean,
+    val privacyPolicyUrl: String?,
+)
