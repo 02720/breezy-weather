@@ -156,9 +156,11 @@ Two lines show two alert levels (20 and 150). It can be disabled in the settings
 From top to bottom:
 
 - Origin of the dominant wind with the highest speed during daytime (arrow icon)
+- *New in v6.2.3* Highest wind gusts of daytime if they are greater than the highest wind speed of daytime (text in a pill + transparent bar behind the highest wind speed of daytime bar)
 - Highest wind speed of daytime (text + bar)
 - Highest wind speed of nighttime (text + bar)
-- Origin of the dominant wind with the highest speed during daytime (arrow icon)
+- *New in v6.2.3* Highest wind gusts of nighttime if they are greater than the highest wind speed of nighttime (text in a pill + transparent bar behind the highest wind speed of nighttime bar)
+- Origin of the dominant wind with the highest speed during nighttime (arrow icon)
 
 Wind icons and speed bars have a different color according to Beaufort wind scale:
 
@@ -269,6 +271,7 @@ From top to bottom:
 
 - Origin of the dominant wind of the hour (arrow icon)
 - Wind speed of the hour (text + bar)
+- *New in v6.2.3* Wind gusts if they are greater than wind speed of the hour (text in a pill + transparent bar behind the wind speed bar)
 
 Wind icons and speed bars have a different color according to Beaufort wind scale:
 

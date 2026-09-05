@@ -8,13 +8,21 @@
 
 **Improvements and fixes
 - Main screen settings - You can now reset blocks, daily trends, hourly trends to default order
+- Main screen - Forecast charts - Add daily/hourly wind gusts
+- Main screen - Forecast charts - Remove excessive margin at the top of some charts
+- Main screen - Forecast charts - Make threshold lines draw on top of chart instead of behind
+- Main screen - Forecast charts - Accessibility: texts will now take into account system font scale
+- Main screen - Forecast charts - Fix missing Daily Wind tab when there is no precipitation in the whole period
 
 **Sources**
 - BMKG - Temporarily disable alert support
 - Open-Meteo - Update selectable weather models
+- Pollen Information - Add missing pollens: ash, chestnut, linden, plantain, sorrel
 
 **Technical**
 - Remove support for Android 6
+- Target Android 17
+- Add pollen levels to datasharing lib
 
 
 # Version 6.2.2 (2026-08-23)
