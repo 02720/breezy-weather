@@ -15,6 +15,7 @@
 - Main screen - Forecast charts - Fix missing Daily Wind tab when there is no precipitation in the whole period
 
 **Sources**
+- Add MSN Weather source: worldwide forecast (up to 10-day day/night, hourly), current observation and weather alerts, from the public interfaces of MSN Weather. No API key required.
 - Add 中国气象数据网 (CMA, China) source: up to 7-day day/night forecast, current observation and official weather alerts, from free public interfaces of the China Meteorological Administration open data portal (secondary source, China only).
 - BMKG - Temporarily disable alert support
 - Open-Meteo - Update selectable weather models

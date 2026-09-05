@@ -21,6 +21,7 @@ Below, you can find details about the support and implementation status for feat
 | 🌐 Worldwide                       | [和风天气](#和风天气) 🔐                                                                          | Forecast, Current, Air quality, Nowcasting, Alerts                                   |
 | 🌐 Worldwide                       | [中科星图](#中科星图) 🔐                                                                          | Forecast, Current, Air quality (CN), Alerts (CN)                                    |
 | 🌐 Worldwide                       | [Tianji Weather](#tianji-weather)                                                                 | Forecast                                                                           |
+| 🌐 Worldwide                       | [MSN Weather](#msn-weather)                                                                       | Forecast, Current, Alerts                                                           |
 | 🌐 Worldwide                       | [WMO Severe Weather](#wmo-severe-weather)                                                         | Alerts                                                                               |
 | 🇦🇽 Åland Islands                 | [FMI](#finnish-meteorological-institute)                                                          | Forecast, Current, Air quality, Alerts, Normals                                      |
 | 🌐 Worldwide                       | [Infoplaza](#infoplaza) 🔐                                                                        | Forecast, Current, Nowcasting                                                        |
@@ -344,6 +345,35 @@ Authentication uses a personal token passed as a query parameter. The API serves
 | Precipitation Duration    | ❌         | Cloud Cover       | ✅           |
 | Wind                      | ✅         | Visibility        | ✅           |
 | Pressure                  | ✅         | Ceiling           | ❌           |
+</details>
+
+### MSN Weather
+**[MSN Weather](https://www.msn.cn/zh-cn/weather)** is a weather service operated by Microsoft. Data comes from the same public interfaces powering the MSN Weather website (msn.cn) and the Windows taskbar weather, so no API key is required. The upstream weather provider varies by country (Foreca in many countries, 中国天气网 in China, etc.).
+
+| Feature                        | Detail                                                           |
+|--------------------------------|------------------------------------------------------------------|
+| 🗺️ **Coverage**               | 🌐 Worldwide                                                     |
+| 📆 **Daily forecast**          | Up to 10 days, split into half-days (daytime / nighttime)        |
+| ⏱️ **Hourly forecast**         | Up to 10 days                                                    |
+| ▶️ **Current observation**     | Available: can complement another source as a **Current Source** |
+| 😶‍🌫️ **Air quality**         | Not available                                                    |
+| 🤧 **Pollen**                  | Not available                                                    |
+| ☔ **Precipitation nowcasting** | Not available                                                    |
+| ⚠️ **Alerts**                  | Available (coverage varies by country)                           |
+| 📊 **Normals**                 | Not available                                                    |
+| 🧭 **Address lookup**          | Not available                                                    |
+
+<details><summary><h4>Details of available data from MSN Weather</h4></summary>
+
+| Data                      | Available | Data              | Available |
+|---------------------------|-----------|-------------------|-----------|
+| Weather Condition         | ✅         | Humidity          | ✅         |
+| Temperature               | ✅         | Dew Point         | ✅         |
+| Precipitation             | ✅ (RS)    | UV Index          | ✅         |
+| Precipitation Probability | ✅         | Sunshine Duration | ❌         |
+| Precipitation Duration    | ❌         | Cloud Cover       | ✅         |
+| Wind                      | ✅         | Visibility        | ✅         |
+| Pressure                  | ✅         | Ceiling           | ❌         |
 </details>
 
 ### Tianji Weather

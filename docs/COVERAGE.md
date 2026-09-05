@@ -307,6 +307,7 @@ In general, a weather source can be considered for inclusion in the official rel
 | GeoNames           | ✅ included from v4.5.0                                                                     |              |
 | HERE               | ✅ included from v4.5.0                                                                     |              |
 | Natural Earth      | ✅ included from v5.0.3                                                                     |              |
+| MSN Weather        | ✅ included from v6.2.3                                                                     | 2026-09-05   |
 | NCDR               | ✅ included from v6.0.5-alpha                                                               |              |
 | NCEI               | ✅ included from v6.0.5-alpha                                                               |              |
 | NLSC               | ✅ included from v6.0.5-alpha                                                               |              |

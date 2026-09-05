@@ -238,6 +238,17 @@ Uses Open-Meteo for location search.
 *To be documented*
 
 
+## MSN Weather
+
+*Last checked: 2026-09-05*
+
+https://www.msn.cn/zh-cn/weather (the app reuses the public interfaces of the MSN Weather web app, which are also used by the Windows taskbar weather; the `apikey`, `appId` and `ocid` query parameters are the public ones of this web app. No personal key is required)
+
+| Endpoint | Version | Notes                                                                                                   |
+|----------|---------|---------------------------------------------------------------------------------------------------------|
+| Overview | 1       | Single call by coordinates returning current conditions, daily (up to 15 days) and hourly forecast, alerts and nowcasting. We request `units=C` (metric) and 10 days, matching the website |
+
+
 ## China
 
 *Legacy source, undocumented*

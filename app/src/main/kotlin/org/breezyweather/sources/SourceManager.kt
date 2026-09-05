@@ -59,7 +59,6 @@ import org.breezyweather.sources.breezyupdatenotifier.BreezyUpdateNotifierServic
 import org.breezyweather.sources.brightsky.BrightSkyService
 import org.breezyweather.sources.caiyun.CaiyunService
 import org.breezyweather.sources.china.ChinaService
-import org.breezyweather.sources.cma.CmaService
 import org.breezyweather.sources.climweb.AnamBfService
 import org.breezyweather.sources.climweb.AnametService
 import org.breezyweather.sources.climweb.DccmsService
@@ -77,6 +76,7 @@ import org.breezyweather.sources.climweb.MsdZwService
 import org.breezyweather.sources.climweb.SmaScService
 import org.breezyweather.sources.climweb.SmaSuService
 import org.breezyweather.sources.climweb.SsmsService
+import org.breezyweather.sources.cma.CmaService
 import org.breezyweather.sources.cwa.CwaService
 import org.breezyweather.sources.debug.DebugService
 import org.breezyweather.sources.dmi.DmiService
@@ -107,6 +107,7 @@ import org.breezyweather.sources.metno.MetNoService
 import org.breezyweather.sources.metoffice.MetOfficeService
 import org.breezyweather.sources.mf.MfService
 import org.breezyweather.sources.mgm.MgmService
+import org.breezyweather.sources.msn.MsnService
 import org.breezyweather.sources.namem.NamemService
 import org.breezyweather.sources.naturalearth.NaturalEarthService
 import org.breezyweather.sources.ncdr.NcdrService
@@ -193,6 +194,7 @@ class SourceManager @Inject constructor(
     mfService: MfService,
     mgmService: MgmService,
     msdZwService: MsdZwService,
+    msnService: MsnService,
     namemService: NamemService,
     naturalEarthService: NaturalEarthService,
     ncdrService: NcdrService,
@@ -244,6 +246,7 @@ class SourceManager @Inject constructor(
         geovisService,
         infoplazaService,
         metNoService,
+        msnService,
         nceiService,
         openWeatherService,
         pirateWeatherService,
