@@ -240,13 +240,15 @@ Uses Open-Meteo for location search.
 
 ## MSN Weather
 
-*Last checked: 2026-09-05*
+*Last checked: 2026-09-06*
 
 https://www.msn.cn/zh-cn/weather (the app reuses the public interfaces of the MSN Weather web app, which are also used by the Windows taskbar weather; the `apikey`, `appId` and `ocid` query parameters are the public ones of this web app. No personal key is required)
 
 | Endpoint | Version | Notes                                                                                                   |
 |----------|---------|---------------------------------------------------------------------------------------------------------|
 | Overview | 1       | Single call by coordinates returning current conditions, daily (up to 15 days) and hourly forecast, alerts and nowcasting. We request `units=C` (metric) and 10 days, matching the website |
+
+The "nowcasting" object holds minute-level, radar-based precipitation rates: `precipitationRate` (in mm/h, one value per 4-minute interval — `minutesBetweenHorrizons`, sic) starting at `timestamp`, with a variable horizon of 45-60 values (~3 hours). The sibling `precipitation` array holds radar reflectivity in dBZ, which does not always match the rate for very light rain, so the app only uses the rate.
 
 
 ## China

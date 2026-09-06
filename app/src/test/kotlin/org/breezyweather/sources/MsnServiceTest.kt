@@ -22,7 +22,9 @@ import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.Json
 import org.breezyweather.common.utils.ISO8601Utils
 import org.breezyweather.sources.msn.getAlertSeverity
+import org.breezyweather.sources.msn.getMinutelyForecast
 import org.breezyweather.sources.msn.getWeatherCode
+import org.breezyweather.sources.msn.json.MsnNowcasting
 import org.breezyweather.sources.msn.json.MsnWeatherResult
 import org.junit.jupiter.api.Test
 
@@ -37,8 +39,9 @@ class MsnServiceTest {
     @Test
     fun decodeOverviewTest() {
         // Real payload captured from the live endpoint on 2026-09-06:
-        // Beijing current observation and forecast, Manila flood alert.
-        // Hourly entries of day 2 were trimmed for size.
+        // Beijing current observation and forecast, Tokyo nowcasting and
+        // Manila flood alert.
+        // Hourly entries of day 2 and nowcasting arrays were trimmed for size.
         val weather = json.decodeFromString<MsnWeatherResult>(
             javaClass.getResourceAsStream("/msn_overview.json")!!
                 .bufferedReader()
@@ -83,6 +86,70 @@ class MsnServiceTest {
         alert.end shouldBe ISO8601Utils.parse("2026-09-06T17:33:30+08:00")
         alert.safetyGuide shouldBe
             "Prepare for possible flooding. Pay close attention to weather forecast and alerts."
+
+        // Minute-level nowcasting: rates are anchored at "timestamp" and each
+        // covers "minutesBetweenHorrizons" minutes
+        val nowcasting = weather.nowcasting!!
+        nowcasting.timestamp shouldBe ISO8601Utils.parse("2026-09-06T05:48:00+00:00")
+        nowcasting.minutesBetweenHorrizons shouldBe 4.0
+        nowcasting.precipitationRate!!.size shouldBe 12
+        nowcasting.precipitationRate!![0] shouldBe 2.289
+    }
+
+    @Test
+    fun getMinutelyForecastTest() {
+        val timestamp = ISO8601Utils.parse("2026-09-06T05:48:00+00:00")
+
+        getMinutelyForecast(null) shouldBe null
+        getMinutelyForecast(
+            MsnNowcasting(timestamp = null, minutesBetweenHorrizons = 4.0, precipitationRate = listOf(1.0))
+        ) shouldBe null
+        getMinutelyForecast(
+            MsnNowcasting(timestamp = timestamp, minutesBetweenHorrizons = null, precipitationRate = listOf(1.0))
+        ) shouldBe null
+        getMinutelyForecast(
+            MsnNowcasting(timestamp = timestamp, minutesBetweenHorrizons = 0.0, precipitationRate = listOf(1.0, 2.0))
+        ) shouldBe null
+        getMinutelyForecast(
+            MsnNowcasting(timestamp = timestamp, minutesBetweenHorrizons = 4.0, precipitationRate = emptyList())
+        ) shouldBe null
+
+        // 12 values every 4 minutes (48 min horizon) resampled every 5 minutes:
+        // linear interpolation over interval midpoints, a null rate counts as 0
+        val minutelyList = getMinutelyForecast(
+            MsnNowcasting(
+                timestamp = timestamp,
+                minutesBetweenHorrizons = 4.0,
+                precipitationRate = listOf(
+                    1.0, 2.0, null, 4.0,
+                    5.0, 6.0, 7.0, 8.0,
+                    9.0, 10.0, 11.0, 12.0
+                )
+            )
+        )!!
+
+        minutelyList.size shouldBe 9
+        minutelyList[0].date shouldBe timestamp
+        minutelyList[0].minuteInterval shouldBe 5
+        minutelyList[0].endingDate shouldBe ISO8601Utils.parse("2026-09-06T05:53:00+00:00")
+        minutelyList[0].precipitationIntensity!!.inMillimeters shouldBe 1.125
+        minutelyList[1].precipitationIntensity!!.inMillimeters shouldBe 1.25
+        minutelyList[2].precipitationIntensity!!.inMillimeters shouldBe 2.5
+        minutelyList[3].precipitationIntensity!!.inMillimeters shouldBe 4.875
+        minutelyList[8].date shouldBe ISO8601Utils.parse("2026-09-06T06:28:00+00:00")
+        minutelyList[8].precipitationIntensity!!.inMillimeters shouldBe 11.125
+
+        // Zero rates are kept as-is: the caller relies on the list to know
+        // there is no precipitation, instead of on a null list
+        val noRainList = getMinutelyForecast(
+            MsnNowcasting(
+                timestamp = timestamp,
+                minutesBetweenHorrizons = 4.0,
+                precipitationRate = List(48) { 0.0 }
+            )
+        )!!
+        noRainList.size shouldBe 38
+        noRainList.all { it.precipitationIntensity!!.inMillimeters == 0.0 } shouldBe true
     }
 
     @Test

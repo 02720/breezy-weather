@@ -21,7 +21,7 @@ Below, you can find details about the support and implementation status for feat
 | 🌐 Worldwide                       | [和风天气](#和风天气) 🔐                                                                          | Forecast, Current, Air quality, Nowcasting, Alerts                                   |
 | 🌐 Worldwide                       | [中科星图](#中科星图) 🔐                                                                          | Forecast, Current, Air quality (CN), Alerts (CN)                                    |
 | 🌐 Worldwide                       | [Tianji Weather](#tianji-weather)                                                                 | Forecast                                                                           |
-| 🌐 Worldwide                       | [MSN Weather](#msn-weather)                                                                       | Forecast, Current, Alerts                                                           |
+| 🌐 Worldwide                       | [MSN Weather](#msn-weather)                                                                       | Forecast, Current, Nowcasting, Alerts                                                |
 | 🌐 Worldwide                       | [WMO Severe Weather](#wmo-severe-weather)                                                         | Alerts                                                                               |
 | 🇦🇽 Åland Islands                 | [FMI](#finnish-meteorological-institute)                                                          | Forecast, Current, Air quality, Alerts, Normals                                      |
 | 🌐 Worldwide                       | [Infoplaza](#infoplaza) 🔐                                                                        | Forecast, Current, Nowcasting                                                        |
@@ -358,7 +358,7 @@ Authentication uses a personal token passed as a query parameter. The API serves
 | ▶️ **Current observation**     | Available: can complement another source as a **Current Source** |
 | 😶‍🌫️ **Air quality**         | Not available                                                    |
 | 🤧 **Pollen**                  | Not available                                                    |
-| ☔ **Precipitation nowcasting** | Not available                                                    |
+| ☔ **Precipitation nowcasting** | Available: minute-level radar-based precipitation rates for the next ~3 hours, in 4-minute steps (resampled to 5-minute intervals) |
 | ⚠️ **Alerts**                  | Available (coverage varies by country)                           |
 | 📊 **Normals**                 | Not available                                                    |
 | 🧭 **Address lookup**          | Not available                                                    |

@@ -24,7 +24,7 @@ import retrofit2.http.Query
 /**
  * MSN Weather (https://www.msn.cn/zh-cn/weather)
  * Single overview endpoint returning current conditions, daily and hourly
- * forecasts, and weather alerts.
+ * forecasts, minute-level precipitation nowcasting, and weather alerts.
  */
 interface MsnApi {
     @GET("service/weather/overview")

@@ -17,11 +17,21 @@
 package org.breezyweather.sources.msn.json
 
 import kotlinx.serialization.Serializable
+import org.breezyweather.common.serializer.DateSerializer
+import java.util.Date
 
+/**
+ * Minute-level precipitation nowcasting, based on radar data.
+ *
+ * "precipitationRate" (in mm/h) holds one value per time interval: the i-th
+ * value covers the minutes going from timestamp + i * minutesBetweenHorrizons
+ * to timestamp + (i + 1) * minutesBetweenHorrizons. "minutesBetweenHorrizons"
+ * is usually 4 (sic, the typo comes from the API), and the horizon length is
+ * not fixed (commonly 45 to 60 values).
+ */
 @Serializable
-data class MsnWeather(
-    val current: MsnCurrent?,
-    val forecast: MsnForecast?,
-    val nowcasting: MsnNowcasting?,
-    val alerts: List<MsnAlert>?,
+data class MsnNowcasting(
+    @Serializable(DateSerializer::class) val timestamp: Date?,
+    val minutesBetweenHorrizons: Double?,
+    val precipitationRate: List<Double?>?,
 )

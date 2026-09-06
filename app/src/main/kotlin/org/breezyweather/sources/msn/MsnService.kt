@@ -81,6 +81,7 @@ class MsnService @Inject constructor(
     override val supportedFeatures = mapOf(
         SourceFeature.FORECAST to name,
         SourceFeature.CURRENT to name,
+        SourceFeature.MINUTELY to name,
         SourceFeature.ALERT to name
     )
     override val attributionLinks = mapOf(
@@ -98,6 +99,7 @@ class MsnService @Inject constructor(
             countryCode = "CN",
             forecastSource = id,
             currentSource = id,
+            minutelySource = id,
             alertSource = id
         ),
         Location(
@@ -109,6 +111,7 @@ class MsnService @Inject constructor(
             countryCode = "US",
             forecastSource = id,
             currentSource = id,
+            minutelySource = id,
             alertSource = id
         )
     )
@@ -145,6 +148,11 @@ class MsnService @Inject constructor(
                 },
                 current = if (SourceFeature.CURRENT in requestedFeatures) {
                     getCurrent(weather.current)
+                } else {
+                    null
+                },
+                minutelyForecast = if (SourceFeature.MINUTELY in requestedFeatures) {
+                    getMinutelyForecast(weather.nowcasting)
                 } else {
                     null
                 },
