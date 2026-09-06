@@ -30,7 +30,6 @@ import breezyweather.domain.weather.model.PrecipitationProbability
 import breezyweather.domain.weather.model.UV
 import breezyweather.domain.weather.model.Wind
 import breezyweather.domain.weather.reference.AlertSeverity
-import breezyweather.domain.weather.reference.WeatherCode
 import breezyweather.domain.weather.wrappers.CurrentWrapper
 import breezyweather.domain.weather.wrappers.DailyWrapper
 import breezyweather.domain.weather.wrappers.HalfDayWrapper
@@ -187,27 +186,28 @@ class MsnService @Inject constructor(
         dailyForecast: List<MsnDailyForecast>?,
     ): List<DailyWrapper>? {
         return dailyForecast?.map { result ->
+            val daily = result.daily ?: throw InvalidOrIncompleteDataException()
             DailyWrapper(
-                date = result.valid ?: throw InvalidOrIncompleteDataException(),
+                date = daily.valid ?: throw InvalidOrIncompleteDataException(),
                 day = getHalfDay(
-                    result.day,
-                    result.tempHi?.celsius,
-                    result.feelsHi?.celsius
+                    daily.day,
+                    daily.tempHi?.celsius,
+                    daily.feelsHi?.celsius
                 ),
                 night = getHalfDay(
-                    result.night,
-                    result.tempLo?.celsius,
-                    result.feelsLo?.celsius
+                    daily.night,
+                    daily.tempLo?.celsius,
+                    daily.feelsLo?.celsius
                 ),
-                uV = UV(index = result.uv),
+                uV = UV(index = daily.uv),
                 relativeHumidity = DailyRelativeHumidity(
-                    average = result.rh?.percent,
-                    max = result.rhHi?.percent,
-                    min = result.rhLo?.percent
+                    average = daily.rh?.percent,
+                    max = daily.rhHi?.percent,
+                    min = daily.rhLo?.percent
                 ),
-                dewPoint = DailyDewPoint(average = result.dewPt?.celsius),
-                pressure = DailyPressure(average = result.baro?.hectopascals),
-                visibility = DailyVisibility(average = result.vis?.kilometers)
+                dewPoint = DailyDewPoint(average = daily.dewPt?.celsius),
+                pressure = DailyPressure(average = daily.baro?.hectopascals),
+                visibility = DailyVisibility(average = daily.vis?.kilometers)
             )
         }
     }
@@ -277,60 +277,21 @@ class MsnService @Inject constructor(
     ): List<Alert>? {
         if (alertList.isNullOrEmpty()) return null
         return alertList.map { alert ->
-            val severity = getAlertSeverity(alert.severity ?: alert.level)
+            // "severity" can be localized (e.g. Japanese "注意報"), so fall back
+            // to "level" which stays English, before giving up
+            val severity = getAlertSeverity(alert.severity)
+                .takeIf { it != AlertSeverity.UNKNOWN } ?: getAlertSeverity(alert.level)
             Alert(
                 alertId = alert.id
                     ?: Objects.hash(alert.title, alert.severity, alert.start).toString(),
                 startDate = alert.start,
                 endDate = alert.end,
                 headline = alert.title ?: alert.event,
-                description = alert.safetyGuide,
+                instruction = alert.safetyGuide,
                 source = alert.credit,
                 severity = severity,
                 color = Alert.colorFromSeverity(severity)
             )
-        }
-    }
-
-    private fun getWeatherCode(
-        symbol: String?,
-    ): WeatherCode? {
-        // Sky codes are prefixed with "d" (daytime) or "n" (night), e.g. "d200".
-        // A 4th digit may follow (e.g. "d1000"): the website truncates it, except
-        // for its "1" value combined with a sky code starting with "0" to "4" and
-        // a "0" second digit, which is a windy variant of the condition.
-        if (symbol.isNullOrEmpty() || symbol.length < 4) return null
-        if (symbol.length >= 5 &&
-            symbol[1] in '0'..'4' &&
-            symbol[2] == '0' &&
-            symbol[4] == '1'
-        ) {
-            return WeatherCode.WIND
-        }
-        return when (symbol.substring(1, 4)) {
-            "000", "100" -> WeatherCode.CLEAR // Sunny, mostly sunny
-            "200" -> WeatherCode.PARTLY_CLOUDY
-            "300", "400", "500" -> WeatherCode.CLOUDY // Mostly cloudy, cloudy
-            "210", "220", "310", "320", "410", "420", "430" -> WeatherCode.RAIN
-            "211", "221", "311", "321", "411", "421", "431", "603" -> WeatherCode.SLEET
-            "212", "222", "312", "322", "412", "422", "432" -> WeatherCode.SNOW
-            "240", "340", "440" -> WeatherCode.THUNDERSTORM
-            "600" -> WeatherCode.FOG
-            "605", "705", "905" -> WeatherCode.HAIL
-            "900", "907" -> WeatherCode.HAZE
-            else -> null
-        }
-    }
-
-    private fun getAlertSeverity(
-        severity: String?,
-    ): AlertSeverity {
-        return when (severity?.lowercase()) {
-            "extreme" -> AlertSeverity.EXTREME
-            "severe" -> AlertSeverity.SEVERE
-            "warning", "moderate" -> AlertSeverity.MODERATE
-            "advisory", "watch", "minor" -> AlertSeverity.MINOR
-            else -> AlertSeverity.UNKNOWN
         }
     }
 

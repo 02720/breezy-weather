@@ -16,6 +16,7 @@
 
 **Sources**
 - Add MSN Weather source: worldwide forecast (up to 10-day day/night, hourly), current observation and weather alerts, from the public interfaces of MSN Weather. No API key required.
+- MSN Weather - Fix the source failing with an "invalid or incomplete data" error on every refresh (daily summary of the overview endpoint is nested under a "daily" object), alert severity now falls back to "level" when localized, and safety guidance is mapped to the instruction field
 - Add 中国气象数据网 (CMA, China) source: up to 7-day day/night forecast, current observation and official weather alerts, from free public interfaces of the China Meteorological Administration open data portal (secondary source, China only).
 - BMKG - Temporarily disable alert support
 - Open-Meteo - Update selectable weather models
