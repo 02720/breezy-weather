@@ -20,6 +20,7 @@
 - MSN Weather - Add minute-level precipitation nowcasting (radar-based, next ~3 hours), usable as a secondary minutely source; 4-minute API steps are resampled to 5-minute intervals
 - Add 中国气象数据网 (CMA, China) source: up to 7-day day/night forecast, current observation and official weather alerts, from free public interfaces of the China Meteorological Administration open data portal (secondary source, China only).
 - BMKG - Temporarily disable alert support
+- Gadgetbridge - Add pressure, cloud cover, and dewpoint (@ThomasKuehne)
 - Open-Meteo - Update selectable weather models
 - Pollen Information - Add missing pollens: ash, chestnut, linden, plantain, sorrel
 
