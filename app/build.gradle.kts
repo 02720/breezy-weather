@@ -25,7 +25,7 @@ configure<ApplicationExtension> {
     defaultConfig {
         applicationId = "my.weather"
         versionCode = 60202
-        versionName = "6.2.2.11"
+        versionName = "6.2.2.12"
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getGitSha()}\"")
