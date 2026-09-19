@@ -111,11 +111,27 @@ class MsnServiceTest {
             MsnNowcasting(timestamp = timestamp, minutesBetweenHorrizons = 0.0, precipitationRate = listOf(1.0, 2.0))
         ) shouldBe null
         getMinutelyForecast(
+            MsnNowcasting(timestamp = timestamp, minutesBetweenHorrizons = -4.0, precipitationRate = listOf(1.0, 2.0))
+        ) shouldBe null
+        getMinutelyForecast(
             MsnNowcasting(timestamp = timestamp, minutesBetweenHorrizons = 4.0, precipitationRate = emptyList())
+        ) shouldBe null
+        getMinutelyForecast(
+            MsnNowcasting(timestamp = timestamp, minutesBetweenHorrizons = 4.0, precipitationRate = listOf(1.0))
+        ) shouldBe null
+        getMinutelyForecast(
+            MsnNowcasting(timestamp = timestamp, minutesBetweenHorrizons = 4.0, precipitationRate = listOf(Double.NaN))
+        ) shouldBe null
+        getMinutelyForecast(
+            MsnNowcasting(
+                timestamp = timestamp,
+                minutesBetweenHorrizons = 4.0,
+                precipitationRate = listOf(1.0, Double.POSITIVE_INFINITY)
+            )
         ) shouldBe null
 
         // 12 values every 4 minutes (48 min horizon) resampled every 5 minutes:
-        // linear interpolation over interval midpoints, a null rate counts as 0
+        // rates are averaged by overlap duration, a null rate counts as 0
         val minutelyList = getMinutelyForecast(
             MsnNowcasting(
                 timestamp = timestamp,
@@ -132,12 +148,12 @@ class MsnServiceTest {
         minutelyList[0].date shouldBe timestamp
         minutelyList[0].minuteInterval shouldBe 5
         minutelyList[0].endingDate shouldBe ISO8601Utils.parse("2026-09-06T05:53:00+00:00")
-        minutelyList[0].precipitationIntensity!!.inMillimeters shouldBe 1.125
-        minutelyList[1].precipitationIntensity!!.inMillimeters shouldBe 1.25
-        minutelyList[2].precipitationIntensity!!.inMillimeters shouldBe 2.5
-        minutelyList[3].precipitationIntensity!!.inMillimeters shouldBe 4.875
+        minutelyList[0].precipitationIntensity!!.inMillimeters shouldBe 1.2
+        minutelyList[1].precipitationIntensity!!.inMillimeters shouldBe 1.2
+        minutelyList[2].precipitationIntensity!!.inMillimeters shouldBe 2.4
+        minutelyList[3].precipitationIntensity!!.inMillimeters shouldBe 4.8
         minutelyList[8].date shouldBe ISO8601Utils.parse("2026-09-06T06:28:00+00:00")
-        minutelyList[8].precipitationIntensity!!.inMillimeters shouldBe 11.125
+        minutelyList[8].precipitationIntensity!!.inMillimeters shouldBe 11.2
 
         // Zero rates are kept as-is: the caller relies on the list to know
         // there is no precipitation, instead of on a null list
@@ -150,6 +166,15 @@ class MsnServiceTest {
         )!!
         noRainList.size shouldBe 38
         noRainList.all { it.precipitationIntensity!!.inMillimeters == 0.0 } shouldBe true
+
+        val negativeRateList = getMinutelyForecast(
+            MsnNowcasting(
+                timestamp = timestamp,
+                minutesBetweenHorrizons = 4.0,
+                precipitationRate = listOf(-1.0, -2.0)
+            )
+        )!!
+        negativeRateList.single().precipitationIntensity!!.inMillimeters shouldBe 0.0
     }
 
     @Test

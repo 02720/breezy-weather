@@ -20,55 +20,55 @@ import breezyweather.domain.weather.model.Minutely
 import org.breezyweather.sources.msn.json.MsnNowcasting
 import org.breezyweather.unit.precipitation.Precipitation.Companion.millimeters
 import java.util.Date
+import kotlin.math.min
 
 /**
  * MSN Weather nowcasting mapping.
  *
- * The app expects 5-minute intervals, whereas the API usually provides
- * 4-minute ones (a length that can’t be split into 5-minute slices), so
- * rates are resampled onto a 5-minute grid starting at the nowcast timestamp.
+ * Source rates are average intensities over consecutive, equally sized
+ * intervals. They are averaged onto complete 5-minute intervals by the amount
+ * of time overlapping each source interval.
  */
 internal fun getMinutelyForecast(
     nowcasting: MsnNowcasting?,
 ): List<Minutely>? {
     val rates = nowcasting?.precipitationRate ?: return null
     val startTime = nowcasting.timestamp?.time ?: return null
-    val stepMinutes = nowcasting.minutesBetweenHorrizons ?: return null
-    if (stepMinutes <= 0.0 || rates.isEmpty()) return null
-
-    // A rate is an average over its interval, so anchor it to the middle of
-    // the interval, then interpolate linearly between anchors
-    val rateValues = rates.map { (it ?: 0.0).coerceAtLeast(0.0) }
-    val lastAnchorMinutes = (rateValues.size - 0.5) * stepMinutes
-
-    fun rateAt(timeMinutes: Double): Double {
-        if (timeMinutes <= 0.5 * stepMinutes) return rateValues.first()
-        if (timeMinutes >= lastAnchorMinutes) return rateValues.last()
-        val position = timeMinutes / stepMinutes - 0.5
-        // coerceIn protects against floating-point rounding pushing the index
-        // out of bounds when a midpoint lands next to the last anchor
-        val index = position.toInt().coerceIn(0, rateValues.size - 2)
-        val weight = position - index
-        return rateValues[index] * (1.0 - weight) + rateValues[index + 1] * weight
+    val sourceIntervalMinutes = nowcasting.minutesBetweenHorrizons ?: return null
+    if (!sourceIntervalMinutes.isFinite() || sourceIntervalMinutes <= 0.0 || rates.isEmpty()) {
+        return null
     }
 
-    val minutelyList = mutableListOf<Minutely>()
-    val horizonMinutes = rateValues.size * stepMinutes
-    var i = 0
-    while ((i + 1) * MINUTELY_INTERVAL_MINUTES <= horizonMinutes) {
-        val startMinutes = i * MINUTELY_INTERVAL_MINUTES.toDouble()
-        minutelyList.add(
-            Minutely(
-                date = Date(startTime + (startMinutes * 60_000.0).toLong()),
-                minuteInterval = MINUTELY_INTERVAL_MINUTES,
-                precipitationIntensity = rateAt(
-                    startMinutes + MINUTELY_INTERVAL_MINUTES / 2.0
-                ).millimeters
-            )
+    val rateValues = rates.map {
+        val rate = it ?: 0.0
+        if (!rate.isFinite()) return null
+        rate.coerceAtLeast(0.0)
+    }
+
+    val horizonMinutes = rateValues.size * sourceIntervalMinutes
+    val intervalCount = (horizonMinutes / MINUTELY_INTERVAL_MINUTES).toInt()
+    if (intervalCount <= 0) return null
+
+    return List(intervalCount) { intervalIndex ->
+        val intervalStart = intervalIndex * MINUTELY_INTERVAL_MINUTES.toDouble()
+        val intervalEnd = intervalStart + MINUTELY_INTERVAL_MINUTES
+        var weightedRate = 0.0
+        var sourceTime = intervalStart
+
+        while (sourceTime < intervalEnd) {
+            val sourceIndex = (sourceTime / sourceIntervalMinutes).toInt()
+            val sourceEnd = (sourceIndex + 1) * sourceIntervalMinutes
+            val overlapEnd = min(intervalEnd, sourceEnd)
+            weightedRate += rateValues[sourceIndex] * (overlapEnd - sourceTime)
+            sourceTime = overlapEnd
+        }
+
+        Minutely(
+            date = Date(startTime + (intervalStart * 60_000.0).toLong()),
+            minuteInterval = MINUTELY_INTERVAL_MINUTES,
+            precipitationIntensity = (weightedRate / MINUTELY_INTERVAL_MINUTES).millimeters
         )
-        i++
     }
-    return minutelyList.ifEmpty { null }
 }
 
 private const val MINUTELY_INTERVAL_MINUTES = 5
