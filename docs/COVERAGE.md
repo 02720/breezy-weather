@@ -316,6 +316,7 @@ In general, a weather source can be considered for inclusion in the official rel
 | 中科星图           | ✅ included from v6.2.2                                                                     | 2026-08-07   |
 | Recosanté          | ✅ included from v5.1.1                                                                     |              |
 | Tianji Weather     | ✅ included in this fork                                                                    | 2026-08-04   |
+| 伏羲天气           | ✅ included in this fork                                                                    | 2026-09-25   |
 | WMO Severe Weather | ✅ included from v5.1.4                                                                     |              |
 | Apple WeatherKit   | ❌ no free tier                                                                             |              |
 | AROME PIAF         | [data in `.grid` format](https://github.com/breezy-weather/breezy-weather/issues/847)      | 2024-03-25   |

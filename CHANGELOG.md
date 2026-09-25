@@ -15,6 +15,7 @@
 - Main screen - Forecast charts - Fix missing Daily Wind tab when there is no precipitation in the whole period
 
 **Sources**
+- Add 伏羲天气 (FuXi Weather) source: worldwide hourly forecast of up to 15 days from the medium-range AI weather model 伏羲中期 (FuXi-C88), from the public interfaces of the official FuXi visualization website. No API key required.
 - Add MSN Weather source: worldwide forecast (up to 10-day day/night, hourly), current observation and weather alerts, from the public interfaces of MSN Weather. No API key required.
 - MSN Weather - Fix the source failing with an "invalid or incomplete data" error on every refresh (daily summary of the overview endpoint is nested under a "daily" object), alert severity now falls back to "level" when localized, and safety guidance is mapped to the instruction field
 - MSN Weather - Add minute-level precipitation nowcasting (radar-based, next ~3 hours), usable as a secondary minutely source; 4-minute API steps are resampled to 5-minute intervals

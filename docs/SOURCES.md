@@ -20,6 +20,7 @@ Below, you can find details about the support and implementation status for feat
 | 🌐 Worldwide                       | [Pirate Weather](#pirate-weather) 🔐                                                              | Forecast, Current, Nowcasting, Alerts                                                |
 | 🌐 Worldwide                       | [和风天气](#和风天气) 🔐                                                                          | Forecast, Current, Air quality, Nowcasting, Alerts                                   |
 | 🌐 Worldwide                       | [中科星图](#中科星图) 🔐                                                                          | Forecast, Current, Air quality (CN), Alerts (CN)                                    |
+| 🌐 Worldwide                       | [伏羲天气](#伏羲天气)                                                                           | Forecast                                                                           |
 | 🌐 Worldwide                       | [Tianji Weather](#tianji-weather)                                                                 | Forecast                                                                           |
 | 🌐 Worldwide                       | [MSN Weather](#msn-weather)                                                                       | Forecast, Current, Nowcasting, Alerts                                                |
 | 🌐 Worldwide                       | [WMO Severe Weather](#wmo-severe-weather)                                                         | Alerts                                                                               |
@@ -420,6 +421,36 @@ the factors served by the official site.
 | Precipitation Duration    | ❌         | Cloud Cover       | ❌           |
 | Wind                      | ✅         | Visibility        | ❌           |
 | Pressure                  | ❌         | Ceiling           | ❌           |
+</details>
+
+### 伏羲天气
+
+**[伏羲天气](https://fuxi-ai.cn/visual/weather)** is the visualization platform of the FuXi weather large model project (Fudan University / Shanghai AI Laboratory). Breezy Weather uses the medium-range model **伏羲中期 (FuXi-C88)**, which provides a worldwide hourly forecast of up to 15 days, from the public interfaces of the website. No API key required.
+
+| Feature                        | Detail                                       |
+|--------------------------------|----------------------------------------------|
+| 🗺️ **Coverage**               | 🌐 Worldwide                                |
+| 📆 **Daily forecast**          | Up to 15 days (computed from hourly data)    |
+| ⏱️ **Hourly forecast**         | Up to 15 days                                |
+| ▶️ **Current observation**     | Not available                                |
+| 😶‍🌫️ **Air quality**             | Not available                                |
+| 🤧 **Pollen**                  | Not available                                |
+| ☔ **Precipitation nowcasting** | Not available                                |
+| ⚠️ **Alerts**                  | Not available                                |
+| 📊 **Normals**                 | Not available                                |
+| 🧭 **Address lookup**          | Not available                                |
+
+<details><summary><h4>Details of available data from 伏羲天气</h4></summary>
+
+| Data                      | Available | Data              | Available |
+|---------------------------|-----------|-------------------|-----------|
+| Weather Condition         | ❌         | Humidity          | ❌         |
+| Temperature               | ✅         | Dew Point         | ❌         |
+| Precipitation             | ✅         | UV Index          | ❌         |
+| Precipitation Probability | ❌         | Sunshine Duration | ❌         |
+| Precipitation Duration    | ❌         | Cloud Cover       | ❌         |
+| Wind                      | ✅         | Visibility        | ❌         |
+| Pressure                  | ❌         | Ceiling           | ❌         |
 </details>
 
 ## National sources
