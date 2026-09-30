@@ -21,6 +21,7 @@ Below, you can find details about the support and implementation status for feat
 | 🌐 Worldwide                       | [和风天气](#和风天气) 🔐                                                                          | Forecast, Current, Air quality, Nowcasting, Alerts                                   |
 | 🌐 Worldwide                       | [中科星图](#中科星图) 🔐                                                                          | Forecast, Current, Air quality (CN), Alerts (CN)                                    |
 | 🌐 Worldwide                       | [伏羲天气](#伏羲天气)                                                                           | Forecast                                                                           |
+| 🌐 Worldwide                       | [相风科技](#相风科技)                                                                           | Forecast                                                                           |
 | 🌐 Worldwide                       | [Tianji Weather](#tianji-weather)                                                                 | Forecast                                                                           |
 | 🌐 Worldwide                       | [MSN Weather](#msn-weather)                                                                       | Forecast, Current, Nowcasting, Alerts                                                |
 | 🌐 Worldwide                       | [WMO Severe Weather](#wmo-severe-weather)                                                         | Alerts                                                                               |
@@ -441,6 +442,36 @@ the factors served by the official site.
 | 🧭 **Address lookup**          | Not available                                |
 
 <details><summary><h4>Details of available data from 伏羲天气</h4></summary>
+
+| Data                      | Available | Data              | Available |
+|---------------------------|-----------|-------------------|-----------|
+| Weather Condition         | ❌         | Humidity          | ❌         |
+| Temperature               | ✅         | Dew Point         | ❌         |
+| Precipitation             | ✅         | UV Index          | ❌         |
+| Precipitation Probability | ❌         | Sunshine Duration | ❌         |
+| Precipitation Duration    | ❌         | Cloud Cover       | ❌         |
+| Wind                      | ✅         | Visibility        | ❌         |
+| Pressure                  | ❌         | Ceiling           | ❌         |
+</details>
+
+### 相风科技
+
+**[相风科技 (Fengwu)](https://fengwuai.com/simple-query)** is the query platform of Fengwu Technology, giving access to the medium-range AI weather model **FengWu-GHR-9km (风乌)**. The forecast is worldwide with a 3-hour time step; Breezy Weather linearly interpolates it to an hourly series. No API key is required, which limits the horizon to about 7 days. An optional personal API key (see the source settings) extends it to the full length of the model run, up to 15 days.
+
+| Feature                        | Detail                                          |
+|--------------------------------|-------------------------------------------------|
+| 🗺️ **Coverage**               | 🌐 Worldwide                                   |
+| 📆 **Daily forecast**          | Up to 15 days with an API key (computed from hourly data) |
+| ⏱️ **Hourly forecast**         | Up to 15 days with an API key                   |
+| ▶️ **Current observation**     | Not available                                   |
+| 😶‍🌫️ **Air quality**             | Not available                                   |
+| 🤧 **Pollen**                  | Not available                                   |
+| ☔ **Precipitation nowcasting** | Not available                                   |
+| ⚠️ **Alerts**                  | Not available                                   |
+| 📊 **Normals**                 | Not available                                   |
+| 🧭 **Address lookup**          | Not available                                   |
+
+<details><summary><h4>Details of available data from 相风科技</h4></summary>
 
 | Data                      | Available | Data              | Available |
 |---------------------------|-----------|-------------------|-----------|

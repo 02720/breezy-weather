@@ -251,6 +251,23 @@ https://www.msn.cn/zh-cn/weather (the app reuses the public interfaces of the MS
 The "nowcasting" object holds minute-level, radar-based precipitation rates: `precipitationRate` (in mm/h, one value per 4-minute interval — `minutesBetweenHorrizons`, sic) starting at `timestamp`, with a variable horizon of 45-60 values (~3 hours). The sibling `precipitation` array holds radar reflectivity in dBZ, which does not always match the rate for very light rain, so the app only uses the rate.
 
 
+## Fengwu (相风科技)
+
+*Last checked: 2026-09-30*
+
+https://fengwuai.com/simple-query (the app reuses the public interfaces of the website)
+
+| Endpoint                   | Version | Notes                                                                                                                                                    |
+|----------------------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Model availability         | v1      | `/api/v1/weather/availability` — time range of the model runs available for querying; `api_end_time` is the latest run and is used as `forecast_time`      |
+| Point query (anonymous)    | open v1 | `/api/open/v1/weather/visual/query` — no authentication, limited horizon (~7 days / 166 h), 3-hour time step                                      |
+| Point query (API key)      | open v1 | `/api/open/v1/weather/query` — `Authorization: Bearer <API key>`, extends the horizon up to the full model run (up to 15 days), same response schema     |
+
+Only the medium-range model **FengWu-GHR-9km (风乌)** is used. Query parameters are `longitude`, `latitude`, `model_type`, `region`, `variables` and `forecast_time` (a model run time in UTC ISO 8601, taken from `api_end_time`). `region=global` accepts coordinates worldwide, whereas `region=cn` rejects points outside China; the app uses `global` for worldwide coverage.
+
+For `region=global` the available variables are `u10`, `v10`, `u100`, `v100` (m/s), `t2m` (K) and `tp6h` (mm), with the app requesting `u10,v10,t2m,tp6h`. The response is a list of 3-hourly points, each with a UTC `time` and a `values` object. `tp6h` is the precipitation accumulated over the preceding 6 hours, so the app first turns it into an hourly rate (÷6) and then interpolates the whole series linearly to hourly data (temperature and wind components interpolated directly, wind speed/direction computed from the interpolated components).
+
+
 ## China
 
 *Legacy source, undocumented*
