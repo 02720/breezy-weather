@@ -16,6 +16,7 @@
 
 **Sources**
 - Add 伏羲天气 (FuXi Weather) source: worldwide hourly forecast of up to 15 days from the medium-range AI weather model 伏羲中期 (FuXi-C88), from the public interfaces of the official FuXi visualization website. No API key required.
+- Add 相风科技 (Fengwu) source: worldwide forecast from the medium-range AI weather model FengWu-GHR-9km (风乌), from the public interfaces of the query website. The model outputs every 3 hours and is linearly interpolated to an hourly series. No API key required (about 7 days); an optional personal API key extends the horizon up to 15 days.
 - Add MSN Weather source: worldwide forecast (up to 10-day day/night, hourly), current observation and weather alerts, from the public interfaces of MSN Weather. No API key required.
 - MSN Weather - Fix the source failing with an "invalid or incomplete data" error on every refresh (daily summary of the overview endpoint is nested under a "daily" object), alert severity now falls back to "level" when localized, and safety guidance is mapped to the instruction field
 - MSN Weather - Add minute-level precipitation nowcasting (radar-based, next ~3 hours), usable as a secondary minutely source; 4-minute API steps are resampled to 5-minute intervals
