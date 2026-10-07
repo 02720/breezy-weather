@@ -520,4 +520,15 @@
         <item>@color/pollenPollenInfoLevel_4</item>
     </integer-array>
 
+    <string-array name="ew4all_model_values" translatable="false">
+        <item>cma_ndfs</item>
+        <item>cma_gfs</item>
+        <item>fengqing</item>
+    </string-array>
+    <string-array name="ew4all_model_names" translatable="false">
+        <item>CMA-NDFS（全球智能网格）</item>
+        <item>CMA-GFS（全球天气模式）</item>
+        <item>风清AI模式</item>
+    </string-array>
+
 </resources>

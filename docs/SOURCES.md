@@ -22,6 +22,7 @@ Below, you can find details about the support and implementation status for feat
 | 🌐 Worldwide                       | [中科星图](#中科星图) 🔐                                                                          | Forecast, Current, Air quality (CN), Alerts (CN)                                    |
 | 🌐 Worldwide                       | [伏羲天气](#伏羲天气)                                                                           | Forecast                                                                           |
 | 🌐 Worldwide                       | [相风科技](#相风科技)                                                                           | Forecast                                                                           |
+| 🌐 Worldwide                       | [EW4ALL](#ew4all)                                                                             | Forecast                                                                           |
 | 🌐 Worldwide                       | [Tianji Weather](#tianji-weather)                                                                 | Forecast                                                                           |
 | 🌐 Worldwide                       | [MSN Weather](#msn-weather)                                                                       | Forecast, Current, Nowcasting, Alerts                                                |
 | 🌐 Worldwide                       | [WMO Severe Weather](#wmo-severe-weather)                                                         | Alerts                                                                               |
@@ -448,6 +449,38 @@ the factors served by the official site.
 | Weather Condition         | ❌         | Humidity          | ❌         |
 | Temperature               | ✅         | Dew Point         | ❌         |
 | Precipitation             | ✅         | UV Index          | ❌         |
+| Precipitation Probability | ❌         | Sunshine Duration | ❌         |
+| Precipitation Duration    | ❌         | Cloud Cover       | ❌         |
+| Wind                      | ✅         | Visibility        | ❌         |
+| Pressure                  | ❌         | Ceiling           | ❌         |
+</details>
+
+### EW4ALL
+
+**[EW4ALL](http://ew4all.wmc-bj.net/EW4ALL/predictions)** (Cloud-based Early Warning Supporting System) is a platform of the China Meteorological Administration supporting the WMO "Early Warnings for All" initiative. Breezy Weather reuses its public point query interfaces, with a choice of three models in the source settings: **CMA-NDFS** (5 km intelligent grid, hourly for the first 3 days then 3-hourly, up to 10 days), **CMA-GFS** (global assimilation and forecast model, 3-hourly, up to 10 days) and **风清AI** (AI model, 6-hourly, up to 15 days, precipitation up to 10 days, without humidity). The forecast is worldwide and the series is linearly interpolated to an hourly forecast. No API key is required.
+
+Model runs are tracked per element by the API, and the precipitation rasters are usually published some time after the temperature and wind ones, so each element is queried with its own latest run.
+
+| Feature                        | Detail                                          |
+|--------------------------------|-------------------------------------------------|
+| 🗺️ **Coverage**               | 🌐 Worldwide                                   |
+| 📆 **Daily forecast**          | Up to 15 days with 风清AI (computed from hourly data) |
+| ⏱️ **Hourly forecast**         | Up to 10 days (CMA-NDFS / CMA-GFS) or 15 days (风清AI) |
+| ▶️ **Current observation**     | Not available                                   |
+| 😶‍🌫️ **Air quality**             | Not available                                   |
+| 🤧 **Pollen**                  | Not available                                   |
+| ☔ **Precipitation nowcasting** | Not available                                   |
+| ⚠️ **Alerts**                  | Not available                                   |
+| 📊 **Normals**                 | Not available                                   |
+| 🧭 **Address lookup**          | Not available                                   |
+
+<details><summary><h4>Details of available data from EW4ALL</h4></summary>
+
+| Data                      | Available | Data              | Available |
+|---------------------------|-----------|-------------------|-----------|
+| Weather Condition         | ❌         | Humidity          | ✅ (CMA-NDFS / CMA-GFS) |
+| Temperature               | ✅         | Dew Point         | ❌         |
+| Precipitation             | ✅ (up to 10 days with 风清AI) | UV Index | ❌         |
 | Precipitation Probability | ❌         | Sunshine Duration | ❌         |
 | Precipitation Duration    | ❌         | Cloud Cover       | ❌         |
 | Wind                      | ✅         | Visibility        | ❌         |

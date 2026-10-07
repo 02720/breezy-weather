@@ -268,6 +268,26 @@ Only the medium-range model **FengWu-GHR-9km (风乌)** is used. Query parameter
 For `region=global` the available variables are `u10`, `v10`, `u100`, `v100` (m/s), `t2m` (K) and `tp6h` (mm), with the app requesting `u10,v10,t2m,tp6h`. The response is a list of 3-hourly points, each with a UTC `time` and a `values` object. `tp6h` is the precipitation accumulated over the preceding 6 hours, so the app first turns it into an hourly rate (÷6) and then interpolates the whole series linearly to hourly data (temperature and wind components interpolated directly, wind speed/direction computed from the interpolated components).
 
 
+## EW4ALL
+
+*Last checked: 2026-10-07*
+
+http://ew4all.wmc-bj.net/EW4ALL/predictions (the app reuses the public interfaces of the "模式预报" page of the Cloud-based Early Warning Supporting System, a CMA platform supporting the WMO "Early Warnings for All" initiative)
+
+The server is only reachable over cleartext HTTP, which is allowed for this host only through the app network security configuration.
+
+| Endpoint     | Version | Notes                                                                                                                                              |
+|--------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| Model runs   | -       | `/EW4ALL/api/modelTimeList?data_type=<model>&element=<element>` — list of published runs for this model and element, as descending UTC `yyyyMMddHHmmss` strings; the latest is used as the run to query |
+| Point query  | -       | `POST /EW4ALL/api/raster/findByPoint` — JSON body `{"mode":"<model>","elements":"<element>","projection":4326,"dataTime":"yyyyMMddHH","level":0,"point":[[lon,lat]]}`, longitudes normalized to [-180, 180) |
+
+The model (`mode`/`data_type`) is selectable in the source settings: `GDFS5KM` (CMA-NDFS, 5 km intelligent grid, hourly for the first 71 h then 3-hourly, up to 240 h), `GRAPESGLOBAL` (CMA-GFS, 3-hourly, up to 240 h) and `NMCFENGQING` (风清AI, 6-hourly, up to 360 h, precipitation only up to 240 h, without humidity). Elements are `TEM` (2 m temperature, °C), `UV` (10 m wind, returned as `WIN_D` in degrees following the meteorological convention — direction the wind blows from — and `WIN_S` in m/s), `RHU` (2 m relative humidity; the website labels it "g/kg" but the values are percentages) and `SIXTPE` (precipitation accumulated over the 6 hours ending at the valid time, mm, sampled every 3 h, or 6 h for 风清AI, starting at +6 h).
+
+Run availability is tracked per element by the API (`RHU` has no runs at all for 风清AI), and the precipitation rasters are usually published some time after the temperature and wind ones of the same run, so the app queries each element with its own latest run and falls back to an empty series for elements without a published run.
+
+Responses are UTC `yyyy-MM-dd HH:mm:ss` times with the element value, or an empty list for points without coverage. Missing values use the -9999 sentinel. The app merges the element series by valid time, converts the wind to u/v components, turns `SIXTPE` into an average hourly rate (÷6) and linearly interpolates the whole series to hourly data (temperature, humidity and wind components interpolated directly, wind speed/direction computed from the interpolated components).
+
+
 ## China
 
 *Legacy source, undocumented*

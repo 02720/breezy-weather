@@ -15,6 +15,7 @@
 - Main screen - Forecast charts - Fix missing Daily Wind tab when there is no precipitation in the whole period
 
 **Sources**
+- Add EW4ALL source: worldwide forecast from three models of the CMA Cloud-based Early Warning Supporting System platform (CMA-NDFS 5 km intelligent grid, CMA-GFS and the AI model 风清AI), from the public interfaces of the point query website. No API key required. The models output every 1, 3 or 6 hours and are linearly interpolated to an hourly series.
 - Add 伏羲天气 (FuXi Weather) source: worldwide hourly forecast of up to 15 days from the medium-range AI weather model 伏羲中期 (FuXi-C88), from the public interfaces of the official FuXi visualization website. No API key required.
 - Add 相风科技 (Fengwu) source: worldwide forecast from the medium-range AI weather model FengWu-GHR-9km (风乌), from the public interfaces of the query website. The model outputs every 3 hours and is linearly interpolated to an hourly series. No API key required (about 7 days); an optional personal API key extends the horizon up to 15 days.
 - Add MSN Weather source: worldwide forecast (up to 10-day day/night, hourly), current observation and weather alerts, from the public interfaces of MSN Weather. No API key required.

@@ -83,6 +83,7 @@ import org.breezyweather.sources.dmi.DmiService
 import org.breezyweather.sources.eccc.EcccService
 import org.breezyweather.sources.ekuk.EkukService
 import org.breezyweather.sources.epdhk.EpdHkService
+import org.breezyweather.sources.ew4all.Ew4allService
 import org.breezyweather.sources.fengwu.FengwuService
 import org.breezyweather.sources.fmi.FmiService
 import org.breezyweather.sources.fpas.FpasService
@@ -164,6 +165,7 @@ class SourceManager @Inject constructor(
     ekukService: EkukService,
     epdHkService: EpdHkService,
     ethioMetService: EthioMetService,
+    ew4allService: Ew4allService,
     fengwuService: FengwuService,
     fmiService: FmiService,
     fpasService: FpasService,
@@ -249,6 +251,7 @@ class SourceManager @Inject constructor(
         fengwuService,
         fpasService,
         fuxiService,
+        ew4allService,
         geovisService,
         infoplazaService,
         metNoService,
