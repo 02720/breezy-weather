@@ -132,38 +132,34 @@ class Ew4allService @Inject constructor(
         val longitude = location.longitude.normalizeLongitude()
         return getLatestRunObservable(model.dataType, ELEMENT_TEMPERATURE)
             .flatMap { modelRun ->
-                if (modelRun == null) {
-                    // No model run published at the moment
-                    failedFeatures[SourceFeature.FORECAST] = WeatherException()
-                    Observable.just(WeatherWrapper(failedFeatures = failedFeatures))
-                } else {
-                    // The temperature series carries the finest time step and
-                    // defines the timeline of the forecast
-                    Observable.zip(
-                        getPointObservable(
-                            model.dataType, ELEMENT_TEMPERATURE, modelRun, longitude, location.latitude
-                        ),
-                        getRequiredPointObservable(
-                            model.dataType, ELEMENT_WIND, longitude, location.latitude
-                        ),
-                        getOptionalPointObservable(
-                            model.dataType, ELEMENT_HUMIDITY, longitude, location.latitude
-                        ),
-                        getOptionalPointObservable(
-                            model.dataType, ELEMENT_PRECIPITATION, longitude, location.latitude
-                        )
-                    ) { temperatureSteps, windSteps, humiditySteps, precipitationSteps ->
-                        convert(
-                            temperatureSteps,
-                            windSteps,
-                            humiditySteps,
-                            precipitationSteps,
-                            location,
-                            failedFeatures
-                        )
-                    }
+                // The temperature series carries the finest time step and
+                // defines the timeline of the forecast
+                Observable.zip(
+                    getPointObservable(
+                        model.dataType, ELEMENT_TEMPERATURE, modelRun, longitude, location.latitude
+                    ),
+                    getRequiredPointObservable(
+                        model.dataType, ELEMENT_WIND, longitude, location.latitude
+                    ),
+                    getOptionalPointObservable(
+                        model.dataType, ELEMENT_HUMIDITY, longitude, location.latitude
+                    ),
+                    getOptionalPointObservable(
+                        model.dataType, ELEMENT_PRECIPITATION, longitude, location.latitude
+                    )
+                ) { temperatureSteps, windSteps, humiditySteps, precipitationSteps ->
+                    convert(
+                        temperatureSteps,
+                        windSteps,
+                        humiditySteps,
+                        precipitationSteps,
+                        location,
+                        failedFeatures
+                    )
                 }
             }
+            // No model run published at the moment
+            .switchIfEmpty(Observable.error(WeatherException()))
             .onErrorResumeNext { e ->
                 failedFeatures[SourceFeature.FORECAST] = e
                 Observable.just(WeatherWrapper(failedFeatures = failedFeatures))
@@ -172,18 +168,16 @@ class Ew4allService @Inject constructor(
 
     /**
      * Returns the latest model run available for one element, as a UTC
-     * "yyyyMMddHH" string, or null when none is published. Availability is
-     * tracked per element by the API.
+     * "yyyyMMddHH" string. Completes empty when none is published.
+     * Availability is tracked per element by the API.
      */
     private fun getLatestRunObservable(
         dataType: String,
         element: String,
-    ): Observable<String?> {
+    ): Observable<String> {
         return mApi.getModelTimeList(dataType, element)
-            .map { timeList ->
-                if (timeList.code != CODE_SUCCESS) {
-                    null
-                } else {
+            .flatMap { timeList ->
+                val latestRun = if (timeList.code == CODE_SUCCESS) {
                     // The runs are returned as descending UTC "yyyyMMddHHmmss"
                     // strings, so the lexicographic maximum is the latest run;
                     // the point query expects it truncated to "yyyyMMddHH"
@@ -192,6 +186,13 @@ class Ew4allService @Inject constructor(
                         .maxOrNull()
                         ?.takeIf { it.isNotEmpty() }
                         ?.substring(0, 10)
+                } else {
+                    null
+                }
+                if (latestRun == null) {
+                    Observable.empty()
+                } else {
+                    Observable.just(latestRun)
                 }
             }
     }
@@ -233,12 +234,9 @@ class Ew4allService @Inject constructor(
     ): Observable<List<Ew4allPointStep>> {
         return getLatestRunObservable(dataType, element)
             .flatMap { run ->
-                if (run == null) {
-                    Observable.just(emptyList<Ew4allPointStep>())
-                } else {
-                    getPointObservable(dataType, element, run, longitude, latitude)
-                }
+                getPointObservable(dataType, element, run, longitude, latitude)
             }
+            .switchIfEmpty(Observable.just(emptyList<Ew4allPointStep>()))
     }
 
     /**
@@ -475,6 +473,25 @@ class Ew4allService @Inject constructor(
         val key: String,
         /** data_type code of the API */
         val dataType: String,
+    )
+
+    /**
+     * One raw forecast point of any element, cleaned of sentinel values, at a
+     * valid time. Wind is stored as u/v components and precipitation as an
+     * hourly rate so that every variable can be interpolated linearly.
+     */
+    private data class Ew4allPoint(
+        val date: Date,
+        /** 2 m temperature, in °C */
+        val temperature: Double?,
+        /** 2 m relative humidity, in % */
+        val relativeHumidity: Double?,
+        /** 10 m eastward wind component, in m/s */
+        val u: Double?,
+        /** 10 m northward wind component, in m/s */
+        val v: Double?,
+        /** Average precipitation rate over the accumulation window, in mm/h */
+        val precipitationRate: Double?,
     )
 
     companion object {
