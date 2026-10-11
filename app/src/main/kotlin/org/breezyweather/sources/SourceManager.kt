@@ -227,20 +227,20 @@ class SourceManager @Inject constructor(
     wmoSevereWeatherService: WmoSevereWeatherService,
 ) {
     // Location sources
-    private val locationSourceList = persistentListOf(
+    private val locationSourceList: ImmutableList<LocationSource> = persistentListOf(
         androidLocationService,
         ipSbService,
         baiduIPService
     )
 
     // Location search sources
-    private val locationSearchSourceList = persistentListOf(
+    private val locationSearchSourceList: ImmutableList<LocationSearchSource> = persistentListOf(
         amapService,
         geoNamesService
     )
 
     // Reverse geocoding sources
-    private val reverseGeocodingSourceList = persistentListOf(
+    private val reverseGeocodingSourceList: ImmutableList<ReverseGeocodingSource> = persistentListOf(
         naturalEarthService,
         androidGeocoderService,
         nominatimService
@@ -248,7 +248,7 @@ class SourceManager @Inject constructor(
 
     // Worldwide weather sources, excluding national sources with worldwide support,
     // with the exception of MET Norway
-    private val worldwideWeatherSourceList = persistentListOf(
+    private val worldwideWeatherSourceList: ImmutableList<WeatherSource> = persistentListOf(
         openMeteoService,
         accuService,
         fengwuService,
@@ -267,8 +267,10 @@ class SourceManager @Inject constructor(
         wmoSevereWeatherService
     )
 
-    // Region-specific or national weather sources
-    private val nationalWeatherSourceList = persistentListOf(
+    // Region-specific or national weather sources.
+    // Source instead of WeatherSource here: NLSC is a reverse geocoding source that is registered
+    // in this group only to show up in the source chooser, so the group has no common sub-type.
+    private val nationalWeatherSourceList: ImmutableList<Source> = persistentListOf(
         aemetService,
         anamBfService,
         anametService,
@@ -333,15 +335,19 @@ class SourceManager @Inject constructor(
     )
 
     // Broadcast sources
-    private val broadcastSourceList = persistentListOf(
+    private val broadcastSourceList: ImmutableList<BroadcastSource> = persistentListOf(
         breezyUpdateNotifierService,
         gadgetbridgeService
     )
 
     private val timeZoneSource = breezyTimeZoneService
 
-    // The order of this list is preserved in "source chooser" dialogs
-    private val sourceList: ImmutableList<Source> = buildList {
+    // The order of this list is preserved in "source chooser" dialogs.
+    // The element type is pinned to Source on purpose: left to inference, the compiler has to look
+    // for a common supertype of ~60 heterogeneous source implementations, gives up and falls back
+    // to Any, which no longer satisfies the declared ImmutableList<Source>
+    // (INITIALIZER_TYPE_MISMATCH).
+    private val sourceList: ImmutableList<Source> = buildList<Source> {
         addAll(locationSourceList)
         addAll(locationSearchSourceList)
         addAll(reverseGeocodingSourceList)
