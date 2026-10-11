@@ -318,6 +318,7 @@ In general, a weather source can be considered for inclusion in the official rel
 | Tianji Weather     | ✅ included in this fork                                                                    | 2026-08-04   |
 | 伏羲天气           | ✅ included in this fork                                                                    | 2026-09-25   |
 | EW4ALL             | ✅ included in this fork                                                                    | 2026-10-07   |
+| 高德地图           | ✅ included in this fork (search only)                                                      | 2026-10-11   |
 | WMO Severe Weather | ✅ included from v5.1.4                                                                     |              |
 | Apple WeatherKit   | ❌ no free tier                                                                             |              |
 | AROME PIAF         | [data in `.grid` format](https://github.com/breezy-weather/breezy-weather/issues/847)      | 2024-03-25   |

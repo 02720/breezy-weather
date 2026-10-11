@@ -807,6 +807,7 @@
     <string name="settings_weather_source_tjweather_weather_models_icon_description">German Weather Service (DWD) forecast system. Up to 7-day forecast.</string>
     <string name="settings_weather_source_tjweather_weather_models_gem">GEM</string>
     <string name="settings_weather_source_tjweather_weather_models_gem_description">Environment and Climate Change Canada (ECCC) forecast system. Up to 10-day forecast.</string>
+    <string name="settings_source_amap_api_key" translatable="false">@string/settings_source_api_key</string>
     <string name="settings_source_geonames_api_key" translatable="false">@string/settings_source_api_key</string>
     <string name="settings_weather_source_polleninfo_api_key" translatable="false">@string/settings_source_api_key</string>"
     <string name="settings_appearance">Appearance</string>

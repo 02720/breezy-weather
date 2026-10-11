@@ -249,6 +249,11 @@ configure<ApplicationExtension> {
         )
         it.buildConfigField(
             "String",
+            "AMAP_KEY",
+            "\"${localProperties.getProperty("breezy.amap.key") ?: ""}\""
+        )
+        it.buildConfigField(
+            "String",
             "ATMO_AURA_KEY",
             "\"${localProperties.getProperty("breezy.atmoaura.key") ?: ""}\""
         )

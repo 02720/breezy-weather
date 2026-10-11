@@ -39,6 +39,7 @@ Below, you can find details about the support and implementation status for feat
 | 🇨🇳 China                         | [Caiyun](#caiyun) 🔐                                                                               | Forecast, Current, Air quality, Nowcasting, Alerts                               |
 | 🇨🇳 China                         | [China](#china)                                                                                   | Forecast, Current, Air quality, Nowcasting, Alerts, Address                          |
 | 🇨🇳 China                         | [中国气象数据网](#中国气象数据网) 🔓                                                              | Forecast, Current, Alerts                                                        |
+| 🇨🇳 China                         | [高德地图 (Amap)](#高德地图-amap) 🔐                                                              | Search                                                                               |
 | 🇨🇩 Democratic Republic of Congo  | [ClimWeb](#climweb)                                                                               | Alerts                                                                               |
 | 🇩🇰 Denmark                       | [DMI](#danmarks-meteorologiske-institut)                                                          | Forecast, Alerts, Address                                                            |
 | 🇪🇪 Estonia                       | [Ilmateenistus](#ilmateenistus)                                                                   | Forecast, Address                                                                    |
@@ -1619,6 +1620,11 @@ These sources can be added as an **Alert** and **Temperature normals** source fo
 > 🔐 **This source requires an API key.** [Register here](https://www.geonames.org/login)
 
 **[GeoNames](https://www.geonames.org/)** provides multilingual search for place names of more than 11 million locations worldwide. This source can be enabled as a **Search** source after adding your API key.
+
+### 高德地图 (Amap)
+> 🔐 **This source requires an API key.** [Register here](https://lbs.amap.com/dev/id/choose)
+
+**[高德地图](https://www.amap.com/)** (Amap) provides keyword search for places located in China, including in Hong Kong and Macau. This source can be enabled as a **Search** source after adding your Web service API key.
 
 ### National Center for Disaster Reduction
 **[National Science & Technology Center for Disaster Reduction](https://www.ncdr.nat.gov.tw/)** (NCDR) can be added as an **Alert** source for Taiwan.

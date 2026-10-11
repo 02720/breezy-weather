@@ -44,6 +44,7 @@ import org.breezyweather.common.source.WeatherSource.Companion.PRIORITY_NONE
 import org.breezyweather.domain.settings.SourceConfigStore
 import org.breezyweather.sources.accu.AccuService
 import org.breezyweather.sources.aemet.AemetService
+import org.breezyweather.sources.amap.AmapService
 import org.breezyweather.sources.android.AndroidGeocoderService
 import org.breezyweather.sources.android.AndroidLocationService
 import org.breezyweather.sources.atmo.AtmoAuraService
@@ -137,6 +138,7 @@ class SourceManager @Inject constructor(
     @ApplicationContext context: Context,
     accuService: AccuService,
     aemetService: AemetService,
+    amapService: AmapService,
     anamBfService: AnamBfService,
     anametService: AnametService,
     androidGeocoderService: AndroidGeocoderService,
@@ -233,6 +235,7 @@ class SourceManager @Inject constructor(
 
     // Location search sources
     private val locationSearchSourceList = persistentListOf(
+        amapService,
         geoNamesService
     )
 

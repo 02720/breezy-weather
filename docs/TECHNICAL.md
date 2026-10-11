@@ -8,6 +8,7 @@ breezy.accu.portal=developer
 breezy.accu.key=myapikey
 breezy.accu.days=15
 breezy.accu.hours=120
+breezy.amap.key=myapikey
 breezy.atmoaura.key=myapikey
 breezy.atmofrance.key=myapikey
 breezy.atmograndest.key=myapikey
@@ -340,3 +341,17 @@ Responses are UTC `yyyy-MM-dd HH:mm:ss` times with the element value, or an empt
 ## MET Éireann
 
 *To be documented*
+
+
+## 高德地图 (Amap)
+
+*Last checked: 2026-10-11*
+
+https://lbs.amap.com/api/webservice/guide/api/search
+
+| Endpoint           | Version | Notes                                                                                                                                                                                                                     |
+|--------------------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Place search       | v3      | `/v3/place/text` — keyword search for POI, without city restriction. `extensions=all` is requested to get the province/city/district names and the province code used to build the location address. Coordinates are returned as "longitude,latitude" |
+| Error reporting    | v3      | Failures are returned with `status=0` and an `info`/`infocode` pair instead of an HTTP error code, see https://lbs.amap.com/api/webservice/guide/tools/info                                                                 |
+
+Note: fields with no value are returned as an empty array instead of an empty string (e.g. `"adname": []`), which the app serializers handle.
