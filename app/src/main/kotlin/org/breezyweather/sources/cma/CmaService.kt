@@ -21,10 +21,12 @@ import breezyweather.domain.location.model.Location
 import breezyweather.domain.source.SourceContinent
 import breezyweather.domain.source.SourceFeature
 import breezyweather.domain.weather.model.Alert
+import breezyweather.domain.weather.model.Precipitation
 import breezyweather.domain.weather.model.Wind
 import breezyweather.domain.weather.wrappers.CurrentWrapper
 import breezyweather.domain.weather.wrappers.DailyWrapper
 import breezyweather.domain.weather.wrappers.HalfDayWrapper
+import breezyweather.domain.weather.wrappers.HourlyWrapper
 import breezyweather.domain.weather.wrappers.TemperatureWrapper
 import breezyweather.domain.weather.wrappers.WeatherWrapper
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -38,10 +40,13 @@ import org.breezyweather.common.source.WeatherSource.Companion.PRIORITY_NONE
 import org.breezyweather.sources.cma.json.CmaAlert
 import org.breezyweather.sources.cma.json.CmaGridForecastDay
 import org.breezyweather.sources.cma.json.CmaGridForecastHalf
+import org.breezyweather.sources.cma.json.CmaGridHourly
 import org.breezyweather.sources.cma.json.CmaGridLiveElement
 import org.breezyweather.sources.common.buildChineseAlertHeadline
 import org.breezyweather.sources.common.getCleanChineseAlertTitle
+import org.breezyweather.unit.distance.Distance.Companion.kilometers
 import org.breezyweather.unit.distance.Distance.Companion.meters
+import org.breezyweather.unit.precipitation.Precipitation.Companion.millimeters
 import org.breezyweather.unit.ratio.Ratio.Companion.percent
 import org.breezyweather.unit.speed.Speed.Companion.metersPerSecond
 import org.breezyweather.unit.temperature.Temperature.Companion.celsius
@@ -65,7 +70,14 @@ private data class CmaGridResult(
 
 private data class CmaForecastResult(
     val days: List<CmaGridForecastDay>?,
+    val hours: List<CmaGridHourly>?,
     val error: Throwable?,
+)
+
+/** A rest/gowfs/hour entry with its parsed forecast time */
+private data class CmaHourlyPoint(
+    val date: Date,
+    val hourly: CmaGridHourly,
 )
 
 private data class CmaAlertFetchResult(
@@ -176,17 +188,32 @@ class CmaService @Inject constructor(
 
         val forecastObservable: Observable<CmaForecastResult> =
             if (SourceFeature.FORECAST in features) {
-                mApi.getGridForecast(location.latitude, location.longitude)
-                    .map { result ->
-                        if (!result.detail.isNullOrEmpty()) {
-                            CmaForecastResult(result.detail, null)
-                        } else {
-                            CmaForecastResult(null, InvalidLocationException())
+                // The day and hour endpoints are independent: each one is fetched
+                // in parallel and can fail without taking the other one down
+                Observable.zip(
+                    mApi.getGridForecast(location.latitude, location.longitude)
+                        .map { result ->
+                            if (!result.detail.isNullOrEmpty()) {
+                                CmaForecastResult(result.detail, null, null)
+                            } else {
+                                CmaForecastResult(null, null, InvalidLocationException())
+                            }
                         }
-                    }
-                    .onErrorResumeNext { e -> Observable.just(CmaForecastResult(null, e)) }
+                        .onErrorResumeNext { e -> Observable.just(CmaForecastResult(null, null, e)) },
+                    mApi.getGridHourlyForecast(location.latitude, location.longitude)
+                        .map { result ->
+                            if (!result.detail.isNullOrEmpty()) {
+                                CmaForecastResult(null, result.detail, null)
+                            } else {
+                                CmaForecastResult(null, null, InvalidLocationException())
+                            }
+                        }
+                        .onErrorResumeNext { e -> Observable.just(CmaForecastResult(null, null, e)) },
+                ) { day, hour ->
+                    CmaForecastResult(day.days, hour.hours, day.error ?: hour.error)
+                }
             } else {
-                Observable.just(CmaForecastResult(null, null))
+                Observable.just(CmaForecastResult(null, null, null))
             }
 
         val alertObservable: Observable<CmaAlertFetchResult> =
@@ -198,19 +225,18 @@ class CmaService @Inject constructor(
 
         return Observable.zip(gridObservable, forecastObservable, alertObservable) { grid, forecast, alerts ->
             var dailyForecast: List<DailyWrapper>? = null
+            var hourlyForecast: List<HourlyWrapper>? = null
             var current: CurrentWrapper? = null
             var alertList: List<Alert>? = null
 
             if (SourceFeature.FORECAST in features) {
-                if (forecast.days == null) {
+                // The day and hour series are converted independently: the feature
+                // is only reported as failed when neither one could be built
+                dailyForecast = forecast.days?.let(::getDailyList)
+                hourlyForecast = forecast.hours?.let(::getHourlyList)
+                if (dailyForecast == null && hourlyForecast == null) {
                     failedFeatures[SourceFeature.FORECAST] =
                         forecast.error ?: InvalidLocationException()
-                } else {
-                    getDailyList(forecast.days)?.let { dailyForecast = it }
-                        ?: run {
-                            failedFeatures[SourceFeature.FORECAST] =
-                                forecast.error ?: InvalidLocationException()
-                        }
                 }
             }
 
@@ -233,6 +259,7 @@ class CmaService @Inject constructor(
 
             WeatherWrapper(
                 dailyForecast = dailyForecast,
+                hourlyForecast = hourlyForecast,
                 current = current,
                 alertList = alertList,
                 failedFeatures = failedFeatures
@@ -339,6 +366,110 @@ class CmaService @Inject constructor(
         )
     }
 
+    /**
+     * Hourly forecast from rest/gowfs/hour. The endpoint reports every hour for
+     * the first 24 hours then every 3 hours, so the series is walked hour by
+     * hour and each missing hour is linearly interpolated between the two
+     * surrounding reported points.
+     */
+    private fun getHourlyList(
+        hours: List<CmaGridHourly>,
+    ): List<HourlyWrapper>? {
+        val timeFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ENGLISH).apply {
+            timeZone = TimeZone.getTimeZone("Asia/Shanghai")
+            isLenient = false
+        }
+        val points = hours.mapNotNull { hourly ->
+            val date = try {
+                timeFormatter.parse(hourly.time ?: return@mapNotNull null)
+            } catch (e: ParseException) {
+                null
+            } ?: return@mapNotNull null
+            CmaHourlyPoint(date, hourly)
+        }.sortedBy { it.date.time }
+        if (points.isEmpty()) return null
+
+        val hourlyList = mutableListOf<HourlyWrapper>()
+        var index = 0
+        var time = points.first().date.time
+        val endTime = points.last().date.time
+        while (time <= endTime) {
+            // Move forward to the interval containing this hour
+            while (index < points.size - 2 && points[index + 1].date.time < time) {
+                index++
+            }
+            val previous = points[index]
+            val next = points.getOrNull(index + 1) ?: previous
+            val spanMillis = (next.date.time - previous.date.time).toDouble()
+            val ratio = if (spanMillis > 0.0) (time - previous.date.time) / spanMillis else 0.0
+            hourlyList.add(
+                buildHourly(Date(time), previous.hourly, next.hourly, ratio, spanMillis / HOUR_IN_MILLIS)
+            )
+            time += HOUR_IN_MILLIS
+        }
+        return hourlyList
+    }
+
+    private fun buildHourly(
+        date: Date,
+        previous: CmaGridHourly,
+        next: CmaGridHourly,
+        ratio: Double,
+        /** Number of hours the two reported points are apart */
+        intervalHours: Double,
+    ): HourlyWrapper {
+        // Categorical data is not interpolated: take the nearest reported point
+        val nearest = if (ratio <= 0.5) previous else next
+        // The reported precipitation is the accumulation over the whole interval,
+        // carried by its end point, so it is spread evenly over the hours it covers
+        val precipitation = next.totalRain
+            ?.trim()
+            ?.toDoubleOrNull()
+            ?.cmaSanitized(0.0, 500.0)
+            ?.div(maxOf(intervalHours, 1.0))
+        return HourlyWrapper(
+            date = date,
+            weatherText = nearest.weatherInfo
+                ?.takeIf { it.isNotBlank() && !it.cmaMissingValue() },
+            weatherCode = getCmaWeatherCode(nearest.weatherIcon?.trim()?.toIntOrNull()),
+            temperature = TemperatureWrapper(
+                temperature = cmaInterpolate(
+                    previous.temperature?.toDoubleOrNull()?.cmaSanitized(-100.0, 100.0),
+                    next.temperature?.toDoubleOrNull()?.cmaSanitized(-100.0, 100.0),
+                    ratio,
+                )?.celsius
+            ),
+            precipitation = precipitation?.let { Precipitation(total = it.millimeters) },
+            wind = Wind(
+                degree = cmaInterpolateDirection(
+                    previous.windDirection?.cmaSanitized(0.0, 360.0),
+                    next.windDirection?.cmaSanitized(0.0, 360.0),
+                    ratio,
+                ),
+                speed = cmaInterpolate(
+                    previous.windSpeed?.cmaSanitized(0.0, 200.0),
+                    next.windSpeed?.cmaSanitized(0.0, 200.0),
+                    ratio,
+                )?.metersPerSecond
+            ),
+            relativeHumidity = cmaInterpolate(
+                previous.humidity?.cmaSanitized(0.0, 100.0),
+                next.humidity?.cmaSanitized(0.0, 100.0),
+                ratio,
+            )?.percent,
+            cloudCover = cmaInterpolate(
+                previous.totalCloud?.cmaSanitized(0.0, 100.0),
+                next.totalCloud?.cmaSanitized(0.0, 100.0),
+                ratio,
+            )?.percent,
+            visibility = cmaInterpolate(
+                previous.visibility?.cmaSanitized(0.0, 100.0),
+                next.visibility?.cmaSanitized(0.0, 100.0),
+                ratio,
+            )?.kilometers
+        )
+    }
+
     private fun getElementValue(
         elements: List<CmaGridLiveElement>,
         elementName: String,
@@ -431,6 +562,11 @@ class CmaService @Inject constructor(
         private val UNRESOLVABLE_AREA_CODES = setOf("100000", "900000")
 
         private const val ALERT_DISTANCE_THRESHOLD_KM = 100.0
-        private const val MAX_FORECAST_DAYS = 7
+
+        // The endpoint returns up to 30 days, but wind is only published for the
+        // first 10; keep a comfortable horizon beyond it
+        private const val MAX_FORECAST_DAYS = 16
+
+        private const val HOUR_IN_MILLIS = 3600_000L
     }
 }

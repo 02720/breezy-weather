@@ -4,6 +4,8 @@ import breezyweather.domain.weather.reference.AlertSeverity
 import breezyweather.domain.weather.reference.WeatherCode
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.nulls.shouldBeNull
+import org.breezyweather.sources.cma.cmaInterpolate
+import org.breezyweather.sources.cma.cmaInterpolateDirection
 import org.breezyweather.sources.cma.cmaMissingValue
 import org.breezyweather.sources.cma.cmaSanitized
 import org.breezyweather.sources.cma.getCmaAlertLevelName
@@ -115,5 +117,36 @@ class CmaConvertersTest {
         // Beijing -> Lhasa, roughly 2600 km
         val beijingToLhasa = getCmaDistanceKm(39.9042, 116.4074, 29.6520, 91.1721)
         (beijingToLhasa > 2500.0 && beijingToLhasa < 2700.0) shouldBe true
+    }
+
+    @Test
+    fun cmaInterpolateTest() {
+        // Bounds
+        cmaInterpolate(10.0, 20.0, 0.0) shouldBe 10.0
+        cmaInterpolate(10.0, 20.0, 1.0) shouldBe 20.0
+        // Halfway through a 3-hour gap
+        cmaInterpolate(10.0, 16.0, 1.0 / 3) shouldBe 12.0
+        cmaInterpolate(10.0, 16.0, 2.0 / 3) shouldBe 14.0
+        // A missing bound falls back to the other one
+        cmaInterpolate(null, 16.0, 0.5) shouldBe 16.0
+        cmaInterpolate(10.0, null, 0.5) shouldBe 10.0
+        cmaInterpolate(null, null, 0.5).shouldBeNull()
+    }
+
+    @Test
+    fun cmaInterpolateDirectionTest() {
+        cmaInterpolateDirection(90.0, 180.0, 0.5) shouldBe 135.0
+        // Turns across north take the shortest way around the circle
+        cmaInterpolateDirection(350.0, 10.0, 0.5) shouldBe 0.0
+        cmaInterpolateDirection(350.0, 10.0, 0.25) shouldBe 355.0
+        // Turns across south as well
+        cmaInterpolateDirection(170.0, 190.0, 0.5) shouldBe 180.0
+        // Bounds are wrapped back into [0, 360[
+        cmaInterpolateDirection(350.0, 10.0, 0.0) shouldBe 350.0
+        cmaInterpolateDirection(350.0, 10.0, 1.0) shouldBe 10.0
+        // A missing bound falls back to the other one
+        cmaInterpolateDirection(null, 180.0, 0.5) shouldBe 180.0
+        cmaInterpolateDirection(90.0, null, 0.5) shouldBe 90.0
+        cmaInterpolateDirection(null, null, 0.5).shouldBeNull()
     }
 }

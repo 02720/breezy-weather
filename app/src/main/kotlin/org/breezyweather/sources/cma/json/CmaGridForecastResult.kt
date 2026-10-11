@@ -19,7 +19,9 @@ package org.breezyweather.sources.cma.json
 import kotlinx.serialization.Serializable
 
 /**
- * Response of rest/gowfs/day: gridded 7-day day/night forecast for a point.
+ * Response of rest/gowfs/day: gridded day/night forecast for a point, from the
+ * GOWFS run published at "pt". Up to 30 days are returned; the source caps the
+ * horizon at 16 days (wind is only published for the first 10).
  * All numeric fields are strings and use "9999" as missing-data sentinel.
  */
 @Serializable

@@ -19,6 +19,7 @@ package org.breezyweather.sources.cma
 import io.reactivex.rxjava3.core.Observable
 import org.breezyweather.sources.cma.json.CmaAlertResult
 import org.breezyweather.sources.cma.json.CmaGridForecastResult
+import org.breezyweather.sources.cma.json.CmaGridHourlyResult
 import org.breezyweather.sources.cma.json.CmaGridLiveResult
 import org.breezyweather.sources.cma.json.CmaRegeoResult
 import retrofit2.http.GET
@@ -29,7 +30,7 @@ import retrofit2.http.Query
  *
  * Reverse-engineered from https://data.cma.cn/dataGis/static/gridgis/#/pcindex,
  * mirroring the endpoints its detail panel calls for a given location.
- * Last checked: 2026-08-25
+ * Last checked: 2026-10-11
  */
 interface CmaApi {
 
@@ -45,13 +46,24 @@ interface CmaApi {
 
     /**
      * Gridded day/night forecast (GOWFS) for a point: what the website shows
-     * in its 7-day panel
+     * in its daily forecast panel
      */
     @GET("rest/gowfs/day")
     fun getGridForecast(
         @Query("lat") latitude: Double,
         @Query("lon") longitude: Double,
     ): Observable<CmaGridForecastResult>
+
+    /**
+     * Gridded hourly forecast (GOWFS) for a point, from the same model run as
+     * [getGridForecast]: hourly for the first 24 hours, then 3-hourly, up to
+     * 10 days. The missing hours are linearly interpolated when converted.
+     */
+    @GET("rest/gowfs/hour")
+    fun getGridHourlyForecast(
+        @Query("lat") latitude: Double,
+        @Query("lon") longitude: Double,
+    ): Observable<CmaGridHourlyResult>
 
     /**
      * Reverse geocoding proxy (AMap) used to resolve coordinates to the

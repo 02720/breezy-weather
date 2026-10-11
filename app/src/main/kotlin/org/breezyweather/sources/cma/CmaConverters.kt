@@ -119,3 +119,34 @@ internal fun getCmaDistanceKm(
         sin(dLon / 2) * sin(dLon / 2)
     return earthRadiusKm * 2 * atan2(sqrt(h), sqrt(1.0 - h))
 }
+
+/**
+ * Linear interpolation between two values, used to fill the hourly gaps of
+ * rest/gowfs/hour (hourly for the first 24 hours, then 3-hourly). When either
+ * bound is unknown, the other one is returned as-is.
+ */
+internal fun cmaInterpolate(
+    previous: Double?,
+    next: Double?,
+    ratio: Double,
+): Double? = when {
+    previous == null -> next
+    next == null -> previous
+    else -> previous + (next - previous) * ratio
+}
+
+/**
+ * Linear interpolation of a wind direction, along the shortest way around the
+ * circle so that a turn from 350° to 10° goes through 0° instead of through
+ * 180°. When either bound is unknown, the other one is returned as-is.
+ */
+internal fun cmaInterpolateDirection(
+    previous: Double?,
+    next: Double?,
+    ratio: Double,
+): Double? {
+    if (previous == null) return next
+    if (next == null) return previous
+    val difference = (next - previous + 540.0) % 360.0 - 180.0
+    return (previous + difference * ratio).mod(360.0)
+}

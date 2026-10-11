@@ -738,8 +738,8 @@ This source aggregates data from Beijing Meteorological Service, ColorfulClouds 
 | Feature                        | Detail                                                           |
 |--------------------------------|------------------------------------------------------------------|
 | 🗺️ **Coverage**               | 🇨🇳 China                                                       |
-| 📆 **Daily forecast**          | Up to 7 days, split into half-days (daytime / nighttime)         |
-| ⏱️ **Hourly forecast**         | Not available                                                    |
+| 📆 **Daily forecast**          | Up to 16 days, split into half-days (daytime / nighttime)        |
+| ⏱️ **Hourly forecast**         | Up to 10 days (hourly for the first 24 hours, then linearly interpolated from the 3-hourly data) |
 | ▶️ **Current observation**     | Available: can complement another source as a **Current Source** |
 | 😶‍🌫️ **Air quality**         | Not available                                                    |
 | 🤧 **Pollen**                  | Not available                                                    |
@@ -752,12 +752,12 @@ This source aggregates data from Beijing Meteorological Service, ColorfulClouds 
 
 | Data                      | Available | Data              | Available                  |
 |---------------------------|-----------|-------------------|----------------------------|
-| Weather Condition         | ✅         | Humidity          | ✅ (Current)                |
+| Weather Condition         | ✅         | Humidity          | ✅ (Current, Hourly)        |
 | Temperature               | ✅         | Dew Point         | ❌                          |
-| Precipitation             | ❌         | UV Index          | ❌                          |
+| Precipitation             | ✅ (Hourly) | UV Index          | ❌                          |
 | Precipitation Probability | ❌         | Sunshine Duration | ❌                          |
-| Precipitation Duration    | ❌         | Cloud Cover       | ✅ (Current)                |
-| Wind                      | ✅         | Visibility        | ✅ (Current)                |
+| Precipitation Duration    | ❌         | Cloud Cover       | ✅ (Current, Hourly)        |
+| Wind                      | ✅         | Visibility        | ✅ (Current, Hourly)        |
 | Pressure                  | ❌         | Ceiling           | ❌                          |
 </details>
 
