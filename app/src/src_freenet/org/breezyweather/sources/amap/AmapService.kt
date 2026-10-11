@@ -36,4 +36,12 @@ class AmapService @Inject constructor() : AmapServiceStub() {
     ): Observable<List<LocationAddressInfo>> {
         throw NonFreeNetSourceException()
     }
+
+    override fun requestNearestLocation(
+        context: Context,
+        latitude: Double,
+        longitude: Double,
+    ): Observable<List<LocationAddressInfo>> {
+        throw NonFreeNetSourceException()
+    }
 }

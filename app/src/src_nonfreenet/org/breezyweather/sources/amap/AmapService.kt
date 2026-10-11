@@ -18,6 +18,8 @@ package org.breezyweather.sources.amap
 
 import android.content.Context
 import breezyweather.domain.location.model.LocationAddressInfo
+import com.google.maps.android.SphericalUtil
+import com.google.maps.android.model.LatLng
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.reactivex.rxjava3.core.Observable
 import org.breezyweather.BuildConfig
@@ -25,11 +27,15 @@ import org.breezyweather.R
 import org.breezyweather.common.exceptions.ApiLimitReachedException
 import org.breezyweather.common.exceptions.ApiUnauthorizedException
 import org.breezyweather.common.exceptions.LocationSearchException
+import org.breezyweather.common.exceptions.ReverseGeocodingException
 import org.breezyweather.common.preference.EditTextPreference
 import org.breezyweather.common.preference.Preference
 import org.breezyweather.domain.settings.SourceConfigStore
+import org.breezyweather.sources.amap.json.AmapAddressComponent
 import org.breezyweather.sources.amap.json.AmapPoi
+import org.breezyweather.sources.amap.json.AmapRegeocode
 import retrofit2.Retrofit
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Named
 
@@ -65,8 +71,31 @@ class AmapService @Inject constructor(
             }
 
             result.pois
-                ?.mapNotNull { convertLocation(it) }
+                ?.mapNotNull { convertSearchedLocation(it) }
                 ?: emptyList()
+        }
+    }
+
+    override fun requestNearestLocation(
+        context: Context,
+        latitude: Double,
+        longitude: Double,
+    ): Observable<List<LocationAddressInfo>> {
+        // Amap expects coordinates as "longitude,latitude"
+        val location = String.format(Locale.US, "%.6f,%.6f", longitude, latitude)
+        return mApi.getNearestPlace(
+            location = location,
+            radius = NEAREST_POI_RADIUS_METERS,
+            extensions = "all",
+            key = getApiKeyOrDefault()
+        ).map { result ->
+            if (result.status != "1") {
+                throw getException(result.infocode)
+            }
+
+            convertNearestLocation(latitude, longitude, result.regeocode)
+                ?.let { listOf(it) }
+                ?: throw ReverseGeocodingException()
         }
     }
 
@@ -89,11 +118,25 @@ class AmapService @Inject constructor(
         }
     }
 
-    private fun convertLocation(poi: AmapPoi): LocationAddressInfo? {
+    /**
+     * Maps a POI returned by the keyword search API (v3/place/text).
+     * The POI name (e.g. "故宫博物院") is the most specific identifier and is therefore
+     * used as the city, following the same convention as ChinaService. It ends up displayed
+     * by [getPlace] on the home screen, in location lists, widgets and notifications.
+     */
+    private fun convertSearchedLocation(poi: AmapPoi): LocationAddressInfo? {
         // Amap returns coordinates as "longitude,latitude"
         val coordinates = poi.location?.split(",") ?: return null
         val longitude = coordinates.getOrNull(0)?.toDoubleOrNull() ?: return null
         val latitude = coordinates.getOrNull(1)?.toDoubleOrNull() ?: return null
+
+        // cityname is an empty array for direct-controlled municipalities (Beijing, Shanghai, ...)
+        val cityName = poi.cityname?.takeIf { it.isNotBlank() && it != poi.pname }
+        val placeName = poi.name?.takeIf { it.isNotBlank() }
+            ?: cityName
+            ?: poi.adname?.takeIf { it.isNotBlank() }
+            ?: poi.pname?.takeIf { it.isNotBlank() }
+            ?: return null
 
         return LocationAddressInfo(
             latitude = latitude,
@@ -102,10 +145,75 @@ class AmapService @Inject constructor(
             countryCode = "CN",
             admin1 = poi.pname,
             admin1Code = poi.pcode,
-            admin2 = poi.cityname,
-            city = poi.cityname,
-            district = poi.adname,
+            admin2 = cityName,
+            city = placeName,
+            district = poi.adname?.takeIf { it.isNotBlank() && it != placeName },
             cityCode = poi.id
+        )
+    }
+
+    /**
+     * Maps the response of the reverse geocoding API (v3/geocode/regeo).
+     * Uses the nearest named POI when available so that the current position is labelled with
+     * an actual place ("北京大学"), falls back to the street/township, district, city and
+     * finally province (e.g. in a rural area or when no POI is nearby).
+     */
+    private fun convertNearestLocation(
+        latitude: Double,
+        longitude: Double,
+        regeocode: AmapRegeocode?,
+    ): LocationAddressInfo? {
+        val component: AmapAddressComponent = regeocode?.addressComponent ?: return null
+        val province = component.province?.takeIf { it.isNotBlank() }
+
+        // Abroad: Amap coverage is China-centric; let the caller fall back to its default source.
+        // Domestic responses either omit country or return "中国" (including HK/MO/TW claims).
+        val country = component.country?.takeIf { it.isNotBlank() }
+        if (country != null && country != "中国") {
+            return null
+        }
+
+        val city = component.city?.takeIf { it.isNotBlank() && it != province }
+        val district = component.district?.takeIf { it.isNotBlank() }
+        val township = component.township?.takeIf { it.isNotBlank() }
+
+        val nearestPoi = regeocode.pois
+            ?.asSequence()
+            ?.filter { !it.name.isNullOrBlank() }
+            // Pick the geographically closest POI, don't trust the API ordering blindly
+            ?.mapNotNull { poi ->
+                val coordinates = poi.location?.split(",") ?: return@mapNotNull null
+                val poiLongitude = coordinates.getOrNull(0)?.toDoubleOrNull() ?: return@mapNotNull null
+                val poiLatitude = coordinates.getOrNull(1)?.toDoubleOrNull() ?: return@mapNotNull null
+                val distance = SphericalUtil.computeDistanceBetween(
+                    LatLng(latitude, longitude),
+                    LatLng(poiLatitude, poiLongitude)
+                )
+                Pair(poi, distance)
+            }
+            ?.minByOrNull { it.second }
+            ?.first
+            ?: regeocode.pois?.firstOrNull { !it.name.isNullOrBlank() }
+
+        val placeName = nearestPoi?.name
+            ?: township
+            ?: district
+            ?: city
+            ?: province
+            ?: return null // No usable address: coordinates are outside Amap coverage
+
+        return LocationAddressInfo(
+            latitude = latitude,
+            longitude = longitude,
+            // Timezone is not provided by Amap: it will be resolved from the location
+            countryCode = "CN",
+            admin1 = province,
+            admin1Code = nearestPoi?.pcode,
+            admin2 = city,
+            admin3 = township?.takeIf { it != placeName && it != district },
+            city = placeName,
+            district = district?.takeIf { it != placeName },
+            cityCode = component.adcode
         )
     }
 
@@ -146,5 +254,8 @@ class AmapService @Inject constructor(
 
     companion object {
         private const val AMAP_BASE_URL = "https://restapi.amap.com/"
+
+        /** Search radius (in meters) used to find a name for the current position */
+        private const val NEAREST_POI_RADIUS_METERS = 1000
     }
 }

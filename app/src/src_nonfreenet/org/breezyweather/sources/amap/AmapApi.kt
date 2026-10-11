@@ -18,6 +18,7 @@ package org.breezyweather.sources.amap
 
 import io.reactivex.rxjava3.core.Observable
 import org.breezyweather.sources.amap.json.AmapPlaceTextResult
+import org.breezyweather.sources.amap.json.AmapRegeocodeResult
 import retrofit2.http.GET
 import retrofit2.http.Query
 
@@ -25,6 +26,7 @@ import retrofit2.http.Query
  * Amap (高德地图) Web service API
  *
  * https://lbs.amap.com/api/webservice/guide/api/search
+ * https://lbs.amap.com/api/webservice/guide/api/georegeo
  * Last checked: 2026-10-11
  */
 interface AmapApi {
@@ -40,4 +42,17 @@ interface AmapApi {
         @Query("extensions") extensions: String,
         @Query("key") key: String,
     ): Observable<AmapPlaceTextResult>
+
+    /**
+     * Reverse geocoding: returns the administrative address and the nearest POIs
+     * for the provided coordinates ("longitude,latitude").
+     * extensions=all is required to get the list of nearby POIs.
+     */
+    @GET("v3/geocode/regeo")
+    fun getNearestPlace(
+        @Query("location") location: String,
+        @Query("radius") radius: Int,
+        @Query("extensions") extensions: String,
+        @Query("key") key: String,
+    ): Observable<AmapRegeocodeResult>
 }

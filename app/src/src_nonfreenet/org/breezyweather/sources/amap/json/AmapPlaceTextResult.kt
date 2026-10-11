@@ -33,6 +33,9 @@ data class AmapPoi(
     /** Unique POI identifier */
     @Serializable(with = AmapStringSerializer::class)
     val id: String? = null,
+    /** POI name, e.g. "故宫博物院" */
+    @Serializable(with = AmapStringSerializer::class)
+    val name: String? = null,
     /**
      * Longitude and latitude, comma-separated, e.g. "116.310905,39.992806"
      * Only returned when requesting with extensions=all
@@ -45,7 +48,7 @@ data class AmapPoi(
     /** Province code, e.g. "110000" */
     @Serializable(with = AmapStringSerializer::class)
     val pcode: String? = null,
-    /** City name, e.g. "北京市" */
+    /** City name, e.g. "石家庄市" (an empty array for direct-controlled municipalities) */
     @Serializable(with = AmapStringSerializer::class)
     val cityname: String? = null,
     /** District or county name, e.g. "海淀区" */

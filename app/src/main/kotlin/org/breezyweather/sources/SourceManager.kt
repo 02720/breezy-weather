@@ -240,6 +240,9 @@ class SourceManager @Inject constructor(
     )
 
     // Reverse geocoding sources
+    // Note: AmapService is registered in locationSearchSourceList; it also implements
+    // ReverseGeocodingSource and is discovered there via filterIsInstance (like the
+    // weather sources that support reverse geocoding), so it is not listed again here.
     private val reverseGeocodingSourceList: ImmutableList<ReverseGeocodingSource> = persistentListOf(
         naturalEarthService,
         androidGeocoderService,
