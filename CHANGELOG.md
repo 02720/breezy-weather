@@ -13,12 +13,15 @@
 - Main screen - Forecast charts - Make threshold lines draw on top of chart instead of behind
 - Main screen - Forecast charts - Accessibility: texts will now take into account system font scale
 - Main screen - Forecast charts - Fix missing Daily Wind tab when there is no precipitation in the whole period
+- Notifications - Dismiss old today/tomorrow/nowcasting notifications if no longer relevant
 
 **Sources**
 - BMKG - Temporarily disable alert support
 - Gadgetbridge - Add pressure, cloud cover, and dewpoint (@ThomasKuehne)
+- MET Norway - Add wind gusts
 - Open-Meteo - Update selectable weather models
 - Pollen Information - Add missing pollens: ash, chestnut, linden, plantain, sorrel
+- SMHI - Add precipitation probability and snow probability
 
 **Technical**
 - Remove support for Android 6
